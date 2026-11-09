@@ -1,0 +1,366 @@
+# Test keywords for iTunes Search API rank checks
+# Lines starting with # are comments. One term per line.
+
+# --- Fitness & health ---
+workout tracker
+gym log
+home workout
+fitness
+weight loss
+step counter
+pedometer
+running app
+run tracker
+cycling tracker
+yoga
+pilates
+meditation
+sleep tracker
+sleep sounds
+white noise
+calorie counter
+macro tracker
+diet planner
+intermittent fasting
+fasting timer
+water reminder
+period tracker
+pregnancy tracker
+blood pressure
+heart rate monitor
+bodyweight workout
+push up counter
+stretching
+hiit timer
+interval timer
+strength training
+muscle building
+abs workout
+5k training
+marathon training
+yoga for beginners
+breathing exercises
+habit tracker
+
+# --- Productivity ---
+todo list
+task manager
+planner
+daily planner
+calendar
+reminders
+notes
+note taking
+notepad
+checklist
+pomodoro timer
+focus timer
+time tracker
+habit builder
+goal tracker
+journal
+diary
+mind map
+whiteboard
+voice memo
+scanner
+pdf scanner
+document scanner
+pdf editor
+pdf reader
+sign pdf
+qr code scanner
+barcode scanner
+widget
+sticky notes
+kanban
+project management
+shared shopping list
+grocery list
+meal planner
+
+# --- Finance ---
+budget
+expense tracker
+budget planner
+money manager
+bill reminder
+subscription tracker
+invoice maker
+receipt scanner
+stock tracker
+crypto wallet
+bitcoin price
+currency converter
+loan calculator
+mortgage calculator
+tip calculator
+savings goal
+net worth
+credit score
+tax calculator
+split bills
+
+# --- Photo & video ---
+photo editor
+video editor
+collage maker
+photo collage
+filters
+background remover
+remove background
+ai photo
+ai avatar
+headshot
+photo enhancer
+photo restore
+old photo
+slideshow maker
+video compressor
+reels editor
+meme maker
+gif maker
+sticker maker
+selfie
+face editor
+cartoon yourself
+screen recorder
+camera
+photo widget
+aesthetic widgets
+wallpaper
+live wallpaper
+lock screen
+
+# --- Utilities ---
+vpn
+wifi
+speed test
+password manager
+authenticator
+file manager
+cleaner
+storage cleaner
+duplicate photos
+battery
+flashlight
+compass
+level
+ruler
+measure
+unit converter
+calculator
+translator
+translate
+dictionary
+keyboard
+emoji keyboard
+ringtone maker
+sound effects
+clock
+alarm clock
+countdown
+stopwatch
+weather
+weather radar
+radar
+earthquake
+sunrise sunset
+moon phase
+star map
+sky guide
+metal detector
+bubble level
+magnifier
+text scanner
+
+# --- Education & languages ---
+learn english
+learn spanish
+learn japanese
+learn korean
+learn german
+learn french
+language learning
+vocabulary
+flashcards
+spaced repetition
+math solver
+homework help
+calculator for algebra
+quiz
+trivia
+study planner
+typing practice
+piano
+learn guitar
+guitar tuner
+chord finder
+metronome
+drawing
+coloring book
+kids learning
+abc
+phonics
+bible
+quran
+daily devotional
+bird identifier
+plant identifier
+mushroom identifier
+rock identifier
+coin identifier
+dog breed identifier
+
+# --- Entertainment & games ---
+puzzle
+crossword
+word game
+word search
+sudoku
+chess
+solitaire
+card game
+trivia game
+idle game
+tower defense
+match 3
+brain training
+bingo
+mahjong
+tetris
+pixel art
+jigsaw
+escape room
+football manager
+fishing
+farm game
+simulator
+racing game
+shooter
+rpg
+strategy game
+coloring game
+number game
+logic puzzle
+
+# --- Social, dating, communication ---
+dating
+chat
+video call
+messenger
+group chat
+anonymous chat
+friends
+family locator
+find my phone
+location sharing
+couples
+widgets for couples
+long distance
+birthday reminder
+countdown to event
+wedding planner
+baby tracker
+baby sleep
+breastfeeding timer
+kids tracker
+
+# --- Travel, maps, transport ---
+maps
+gps
+offline maps
+travel planner
+trip planner
+flight tracker
+hotel booking
+cheap flights
+car rental
+parking
+fuel prices
+gas prices
+ev charging
+speed camera
+public transport
+train tickets
+bus tracker
+hiking
+trail map
+ski tracker
+camping
+
+# --- Music, audio, books ---
+music player
+podcast
+audiobooks
+ebook reader
+radio
+fm radio
+music recognition
+karaoke
+dj
+beat maker
+voice recorder
+text to speech
+speech to text
+transcribe
+meeting notes
+ai transcription
+noise machine
+lofi
+
+# --- Food, home, lifestyle ---
+recipes
+cooking
+meal prep
+restaurant finder
+coffee
+wine
+cocktail recipes
+plant care
+garden planner
+pet care
+dog training
+cat translator
+home design
+interior design
+room planner
+cleaning schedule
+chore chart
+astrology
+horoscope
+tarot
+dream journal
+manifestation
+affirmations
+
+# --- AI & trending ---
+ai chat
+chatbot
+ai assistant
+ai writer
+ai art
+ai image generator
+ai video
+ai tutor
+ai homework
+ai summarizer
+ai notes
+
+# --- Long-tail / intent phrases ---
+free workout tracker no ads
+best app for tracking gym workouts
+how to lose weight fast
+app to learn japanese for beginners
+track my spending
+split expenses with friends
+reminder app for medication
+medication reminder
+pill reminder
+track my period and ovulation
+count calories with photo
+daily habit tracker with widgets
+offline pdf reader
+scan documents to pdf
+learn to code
+learn piano for beginners

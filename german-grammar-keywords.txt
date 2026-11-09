@@ -1,0 +1,149 @@
+# Keywords for "üben: german grammar" (target: English speakers learning German)
+# Import with POST /api/aso/import-keywords?country=us  (repeat per storefront)
+# Lines starting with # are comments.
+
+# --- Core: highest-intent, most competitive ---
+german grammar
+german grammar app
+learn german
+learn german app
+german learning
+german language
+german lessons
+german practice
+german exercises
+german quiz
+german grammar exercises
+german grammar practice
+german grammar quiz
+german grammar rules
+german grammar test
+german grammar for beginners
+german grammar explained
+german for beginners
+german for english speakers
+german tutor
+german trainer
+german teacher
+german course
+german classes
+german study
+
+# --- Grammar topics (long-tail, more winnable) ---
+german cases
+german case trainer
+german articles
+der die das
+der die das trainer
+der die das quiz
+german noun gender
+german genders
+german declension
+german adjective endings
+german verb conjugation
+german conjugation app
+german verb conjugator
+german verbs
+german irregular verbs
+german strong verbs
+german modal verbs
+german separable verbs
+german reflexive verbs
+german prepositions
+two way prepositions german
+german dative
+german accusative
+german nominative
+german genitive
+german word order
+german sentence structure
+german sentence builder
+german subordinate clauses
+german relative clauses
+german tenses
+german past tense
+german perfect tense
+german konjunktiv
+german subjunctive
+german passive voice
+german plurals
+german plural nouns
+german pronouns
+german adjectives
+german comparatives
+german conjunctions
+german negation
+
+# --- Levels and exams ---
+german a1
+german a2
+german b1
+german b2
+german c1
+german a1 a2
+german b1 exam
+goethe exam
+goethe b1
+goethe b2
+telc german
+testdaf
+german cefr
+german exam prep
+german test
+german level test
+
+# --- Vocabulary and skills adjacent to grammar ---
+german vocabulary
+german vocab trainer
+german flashcards
+german sentences
+german noun trainer
+german words
+german phrases
+german listening
+german reading
+german writing
+german translator
+german dictionary
+german pronunciation
+german alphabet
+german numbers
+
+# --- Intent phrases ---
+how to learn german
+learn german fast
+learn german for free
+learn german offline
+learn german grammar
+best app to learn german
+german grammar made easy
+german grammar for adults
+german homework help
+german verb practice
+practice german sentences
+german fill in the blanks
+german grammar drills
+german grammar lessons
+german grammar book
+german grammar checker
+
+# --- German-language queries (people searching in German) ---
+deutsch lernen
+deutsch grammatik
+deutsch üben
+deutsch uben
+übungen deutsch
+deutsch übungen
+deutsch grammatik übungen
+deutsch als fremdsprache
+daf
+artikel üben
+konjugation üben
+
+# --- Competitor discovery (not for your metadata; track to see who ranks) ---
+duolingo german
+babbel german
+busuu german
+memrise german
+lingoda
+anki german
