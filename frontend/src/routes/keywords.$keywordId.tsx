@@ -23,6 +23,7 @@ import {
 } from 'recharts';
 
 export const Route = createFileRoute('/keywords/$keywordId')({
+  ssr: false,
   loader: async ({ context, params }) => {
     const { pb } = context;
     const [history, apps] = await Promise.all([
@@ -41,7 +42,14 @@ export const Route = createFileRoute('/keywords/$keywordId')({
   component: KeywordDetails,
 });
 
-const COLORS = ['#2563eb', '#dc2626', '#16a34a', '#d97706', '#9333ea', '#0891b2'];
+const COLORS = [
+  '#2563eb',
+  '#dc2626',
+  '#16a34a',
+  '#d97706',
+  '#9333ea',
+  '#0891b2',
+];
 const MAX_RANK = 200; // iTunes search returns at most 200 results
 
 const day = (iso: string) => iso.slice(0, 10);

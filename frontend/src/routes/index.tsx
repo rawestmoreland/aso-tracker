@@ -42,12 +42,13 @@ type RankFilter = keyof typeof RANK_FILTERS;
 const PAGE_SIZES = [10, 25, 50, 100];
 
 export const Route = createFileRoute('/')({
+  ssr: false,
   loader: async ({ context }) => {
     const data = await context.pb
       .collection<LatestRanksRecord>('latest_ranks')
       .getFullList();
 
-    return data;
+    return data ?? [];
   },
   component: App,
 });
@@ -135,7 +136,7 @@ function App() {
     key: 'table',
     features,
     columns,
-    data,
+    data: data ?? [],
     initialState: {
       sorting: [{ id: 'rank', desc: false }],
       pagination: { pageIndex: 0, pageSize: 25 },
@@ -149,6 +150,8 @@ function App() {
   const filteredCount = table.getFilteredRowModel().rows.length;
   const from = filteredCount === 0 ? 0 : pageIndex * pageSize + 1;
   const to = Math.min((pageIndex + 1) * pageSize, filteredCount);
+
+  if (!data) return null;
 
   return (
     <main className='page-wrap px-4 pb-8 pt-14'>

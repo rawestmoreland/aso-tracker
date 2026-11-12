@@ -13,7 +13,8 @@
     "format": "biome format",
     "lint": "biome lint",
     "check": "biome check",
-    "deploy": "npm run build && wrangler deploy"
+    "deploy:dev": "vite build --mode development && wrangler deploy",
+    "deploy:prod": "vite build --mode production && wrangler deploy --env production"
   },
   "dependencies": {
     "@faker-js/faker": "^10.3.0",
@@ -51,7 +52,7 @@
     "@vitejs/plugin-react": "^6.0.1",
     "typescript": "^6.0.2",
     "vite": "^8.0.0",
-    "wrangler": "^4.70.0"
+    "wrangler": "^4.160.1"
   },
   "pnpm": {
     "onlyBuiltDependencies": [
