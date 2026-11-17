@@ -46,7 +46,7 @@ export const Route = createFileRoute('/')({
   loader: async ({ context }) => {
     const data = await context.pb
       .collection<LatestRanksRecord>('latest_ranks')
-      .getFullList();
+      .getFullList({ filter: 'is_mine = true' });
 
     return data ?? [];
   },
