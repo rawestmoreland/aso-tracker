@@ -10,11 +10,17 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as GapsRouteImport } from './routes/gaps'
 import { Route as KeywordsKeywordIdRouteImport } from './routes/keywords.$keywordId'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const GapsRoute = GapsRouteImport.update({
+  id: '/gaps',
+  path: '/gaps',
   getParentRoute: () => rootRouteImport,
 } as any)
 const KeywordsKeywordIdRoute = KeywordsKeywordIdRouteImport.update({
@@ -25,27 +31,31 @@ const KeywordsKeywordIdRoute = KeywordsKeywordIdRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/gaps': typeof GapsRoute
   '/keywords/$keywordId': typeof KeywordsKeywordIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/gaps': typeof GapsRoute
   '/keywords/$keywordId': typeof KeywordsKeywordIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/gaps': typeof GapsRoute
   '/keywords/$keywordId': typeof KeywordsKeywordIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/keywords/$keywordId'
+  fullPaths: '/' | '/gaps' | '/keywords/$keywordId'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/keywords/$keywordId'
-  id: '__root__' | '/' | '/keywords/$keywordId'
+  to: '/' | '/gaps' | '/keywords/$keywordId'
+  id: '__root__' | '/' | '/gaps' | '/keywords/$keywordId'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  GapsRoute: typeof GapsRoute
   KeywordsKeywordIdRoute: typeof KeywordsKeywordIdRoute
 }
 
@@ -56,6 +66,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/gaps': {
+      id: '/gaps'
+      path: '/gaps'
+      fullPath: '/gaps'
+      preLoaderRoute: typeof GapsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/keywords/$keywordId': {
@@ -70,6 +87,7 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  GapsRoute: GapsRoute,
   KeywordsKeywordIdRoute: KeywordsKeywordIdRoute,
 }
 export const routeTree = rootRouteImport

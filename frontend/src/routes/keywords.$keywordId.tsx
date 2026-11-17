@@ -23,8 +23,21 @@ import type {
 	RankHistoryRecord,
 } from "#/lib/pocketbase-types";
 
+const RANGES = [
+	{ key: "7", label: "7 days", days: 7 },
+	{ key: "30", label: "30 days", days: 30 },
+	{ key: "90", label: "90 days", days: 90 },
+	{ key: "all", label: "All time", days: null },
+] as const;
+type RangeKey = (typeof RANGES)[number]["key"];
+
 export const Route = createFileRoute("/keywords/$keywordId")({
 	ssr: false,
+	// "all" is the default, so it stays out of the URL.
+	validateSearch: (s: Record<string, unknown>): { range?: RangeKey } => {
+		const hit = RANGES.find((r) => r.key === String(s.range));
+		return { range: hit && hit.key !== "all" ? hit.key : undefined };
+	},
 	loader: async ({ context, params }) => {
 		const { pb } = context;
 		const [history, apps] = await Promise.all([
@@ -49,7 +62,16 @@ const MAX_RANK = 200; // iTunes search returns at most 200 results
 const day = (iso: string) => iso.slice(0, 10);
 
 function KeywordDetails() {
-	const { history, apps } = Route.useLoaderData();
+	const { history: fullHistory, apps } = Route.useLoaderData();
+	const range = Route.useSearch().range ?? "all";
+	const days = RANGES.find((r) => r.key === range)?.days ?? null;
+	const cutoff =
+		days == null
+			? ""
+			: new Date(Date.now() - days * 86400_000).toISOString().slice(0, 10);
+	const history = cutoff
+		? fullHistory.filter((h) => day(h.checked_at) >= cutoff)
+		: fullHistory;
 
 	const appList = [...apps]
 		.map((a) => ({
@@ -82,8 +104,8 @@ function KeywordDetails() {
 	const checks = [...history].reverse().slice(0, 100);
 
 	const latest = (appId: string) => {
-		for (let i = history.length - 1; i >= 0; i--)
-			if (history[i].app === appId) return history[i].rank || 0;
+		for (let i = fullHistory.length - 1; i >= 0; i--)
+			if (fullHistory[i].app === appId) return fullHistory[i].rank || 0;
 		return null;
 	};
 	const axis = { fill: "var(--muted-foreground)", fontSize: 12 };
@@ -139,62 +161,91 @@ function KeywordDetails() {
 				})}
 			</ul>
 
+			<nav
+				aria-label="Date range"
+				className="mb-3 inline-flex gap-1 rounded-xl border border-border bg-card p-1"
+			>
+				{RANGES.map((r) => (
+					<Link
+						key={r.key}
+						to="."
+						search={{ range: r.key === "all" ? undefined : r.key }}
+						replace
+						aria-current={range === r.key ? "true" : undefined}
+						className={cn(
+							"rounded-lg px-3 py-1 text-sm font-medium no-underline transition-colors",
+							range === r.key
+								? "bg-accent text-accent-foreground"
+								: "text-muted-foreground hover:text-foreground",
+						)}
+					>
+						{r.label}
+					</Link>
+				))}
+			</nav>
+
 			<div className="card h-96 w-full p-4 pb-2">
-				<ResponsiveContainer width="100%" height="100%">
-					<LineChart data={chartData} margin={{ top: 8, right: 16, left: 0 }}>
-						<CartesianGrid vertical={false} stroke="var(--border)" />
-						<XAxis
-							dataKey="date"
-							tick={axis}
-							axisLine={{ stroke: "var(--border)" }}
-							tickLine={false}
-							tickMargin={8}
-						/>
-						<YAxis
-							reversed
-							allowDecimals={false}
-							domain={[1, worst]}
-							tick={axis}
-							axisLine={false}
-							tickLine={false}
-							width={44}
-							tickFormatter={(v) => `#${v}`}
-						/>
-						<Tooltip
-							cursor={{ stroke: "var(--border)" }}
-							contentStyle={{
-								background: "var(--popover)",
-								border: "1px solid var(--border)",
-								borderRadius: 12,
-								color: "var(--popover-foreground)",
-								boxShadow: "var(--shadow-card)",
-							}}
-							formatter={(v, name) => [
-								v == null ? "200+" : `#${v}`,
-								appName.get(String(name)) ?? name,
-							]}
-						/>
-						{appList.map((a, i) => (
-							<Line
-								key={a.id}
-								dataKey={a.id}
-								name={a.id}
-								stroke={COLORS[i % COLORS.length]}
-								strokeWidth={a.isMine ? 3.5 : 1.75}
-								strokeLinecap="round"
-								connectNulls={false}
-								dot={{
-									r: a.isMine ? 4 : 2.5,
-									strokeWidth: 2,
-									fill: "var(--card)",
-								}}
-								activeDot={{ r: 6 }}
-								isAnimationActive={false}
+				{chartData.length === 0 ? (
+					<p className="grid h-full place-items-center text-muted-foreground">
+						No checks in this range.
+					</p>
+				) : (
+					<ResponsiveContainer width="100%" height="100%">
+						<LineChart data={chartData} margin={{ top: 8, right: 16, left: 0 }}>
+							<CartesianGrid vertical={false} stroke="var(--border)" />
+							<XAxis
+								dataKey="date"
+								tick={axis}
+								axisLine={{ stroke: "var(--border)" }}
+								tickLine={false}
+								tickMargin={8}
 							/>
-						))}
-						{/* TODO: <ReferenceLine x='YYYY-MM-DD' /> for title/subtitle changes */}
-					</LineChart>
-				</ResponsiveContainer>
+							<YAxis
+								reversed
+								allowDecimals={false}
+								domain={[1, worst]}
+								tick={axis}
+								axisLine={false}
+								tickLine={false}
+								width={44}
+								tickFormatter={(v) => `#${v}`}
+							/>
+							<Tooltip
+								cursor={{ stroke: "var(--border)" }}
+								contentStyle={{
+									background: "var(--popover)",
+									border: "1px solid var(--border)",
+									borderRadius: 12,
+									color: "var(--popover-foreground)",
+									boxShadow: "var(--shadow-card)",
+								}}
+								formatter={(v, name) => [
+									v == null ? "200+" : `#${v}`,
+									appName.get(String(name)) ?? name,
+								]}
+							/>
+							{appList.map((a, i) => (
+								<Line
+									key={a.id}
+									dataKey={a.id}
+									name={a.id}
+									stroke={COLORS[i % COLORS.length]}
+									strokeWidth={a.isMine ? 3.5 : 1.75}
+									strokeLinecap="round"
+									connectNulls={false}
+									dot={{
+										r: a.isMine ? 4 : 2.5,
+										strokeWidth: 2,
+										fill: "var(--card)",
+									}}
+									activeDot={{ r: 6 }}
+									isAnimationActive={false}
+								/>
+							))}
+							{/* TODO: <ReferenceLine x='YYYY-MM-DD' /> for title/subtitle changes */}
+						</LineChart>
+					</ResponsiveContainer>
+				)}
 			</div>
 
 			<h2 className="font-display mb-3 mt-10 text-2xl font-bold tracking-tight">

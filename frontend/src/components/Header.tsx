@@ -34,7 +34,26 @@ export default function Header() {
 						Standings
 					</span>
 				</Link>
-				<ThemeToggle />
+				<div className="flex items-center gap-5">
+					<nav
+						aria-label="Main"
+						className="flex items-center gap-4 text-sm font-medium"
+					>
+						<Link
+							to="/"
+							className="text-muted-foreground no-underline transition-colors hover:text-foreground [&.active]:text-foreground"
+						>
+							Keywords
+						</Link>
+						<Link
+							to="/gaps"
+							className="text-muted-foreground no-underline transition-colors hover:text-foreground [&.active]:text-foreground"
+						>
+							Gaps
+						</Link>
+					</nav>
+					<ThemeToggle />
+				</div>
 			</div>
 		</header>
 	);
