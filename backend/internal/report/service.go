@@ -6,12 +6,14 @@ import (
 	"errors"
 	"fmt"
 	"net/mail"
+	"net/url"
 	"strings"
 	"sync/atomic"
 	"time"
 
 	"ganigeorgiev.com/pocketbase/pocketbase/core"
 	"ganigeorgiev.com/pocketbase/pocketbase/tools/mailer"
+	"ganigeorgiev.com/pocketbase/pocketbase/tools/security"
 	"ganigeorgiev.com/pocketbase/pocketbase/tools/types"
 )
 
@@ -25,6 +27,10 @@ type Service struct {
 	// Recipients is the default list. When empty, the report goes to the
 	// instance's superusers.
 	Recipients []string
+	// PublicURL is the site's public origin (ASO_PUBLIC_URL), used to build
+	// each report's permalink. When empty it falls back to PocketBase's
+	// Application URL setting, unless that is still the localhost default.
+	PublicURL string
 
 	running atomic.Bool
 }
@@ -39,7 +45,11 @@ type RunOptions struct {
 
 // Result summarises a run.
 type Result struct {
-	ID         string   `json:"id"`
+	ID string `json:"id"`
+	// Path is the report's permalink path; URL is the absolute link, empty
+	// when no public URL is configured (in which case emails omit the link).
+	Path       string   `json:"path"`
+	URL        string   `json:"url"`
 	Subject    string   `json:"subject"`
 	Sent       bool     `json:"sent"`
 	Recipients []string `json:"recipients"`
@@ -67,14 +77,25 @@ func (s *Service) Run(ctx context.Context, opt RunOptions) (*Result, error) {
 	if err != nil {
 		return nil, err
 	}
-	rec, err := s.save(rep, to)
+	slug := security.RandomStringWithAlphabet(24, slugAlphabet)
+	rec, err := s.save(rep, to, slug)
 	if err != nil {
 		return nil, fmt.Errorf("store report: %w", err)
 	}
-	res := &Result{ID: rec.Id, Subject: rep.Email.Subject, Model: rep.Model, Usage: rep.Usage}
+	res := &Result{ID: rec.Id, Path: ViewPath(slug), URL: s.viewURL(slug), Subject: rep.Email.Subject, Model: rep.Model, Usage: rep.Usage}
 
 	if opt.Send {
-		if err := s.send(rep.Email, to); err != nil {
+		// The stored (web) copy has no "view in browser" link; the emailed copy does.
+		email := rep.Email
+		if res.URL != "" {
+			var err error
+			meta := rep.Meta
+			meta.WebURL = res.URL
+			if email, err = Render(rep.Content, rep.Snapshot, meta); err != nil {
+				return res, fmt.Errorf("render email: %w", err)
+			}
+		}
+		if err := s.send(email, to); err != nil {
 			return res, fmt.Errorf("report %s was saved but sending failed: %w", rec.Id, err)
 		}
 		rec.Set("sent_at", types.NowDateTime())
@@ -124,7 +145,32 @@ func (s *Service) recipients(override []string) ([]mail.Address, error) {
 	return out, nil
 }
 
-func (s *Service) save(rep *Report, to []mail.Address) (*core.Record, error) {
+const slugAlphabet = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
+
+// ViewPath is the public path a report is served at.
+func ViewPath(slug string) string { return "/api/aso/report/view/" + slug }
+
+func (s *Service) baseURL() string {
+	base := strings.TrimSpace(s.PublicURL)
+	if base == "" {
+		base = s.App.Settings().Meta.AppURL
+		// PocketBase's default Application URL is a localhost placeholder,
+		// which would put a dead link in a real email.
+		if u, err := url.Parse(base); err != nil || u.Hostname() == "localhost" || u.Hostname() == "127.0.0.1" {
+			return ""
+		}
+	}
+	return strings.TrimRight(base, "/")
+}
+
+func (s *Service) viewURL(slug string) string {
+	if base := s.baseURL(); base != "" {
+		return base + ViewPath(slug)
+	}
+	return ""
+}
+
+func (s *Service) save(rep *Report, to []mail.Address, slug string) (*core.Record, error) {
 	col, err := s.App.FindCollectionByNameOrId("reports")
 	if err != nil {
 		return nil, err
@@ -134,6 +180,7 @@ func (s *Service) save(rep *Report, to []mail.Address) (*core.Record, error) {
 		rcpt = append(rcpt, a.Address)
 	}
 	rec := core.NewRecord(col)
+	rec.Set("slug", slug)
 	rec.Set("subject", rep.Email.Subject)
 	rec.Set("headline", rep.Content.Headline)
 	rec.Set("model", rep.Model)
@@ -155,6 +202,21 @@ func (s *Service) send(e *Email, to []mail.Address) error {
 		Text:    e.Text,
 	})
 }
+
+// HTMLBySlug returns a stored report's page by its public slug.
+func (s *Service) HTMLBySlug(slug string) (string, error) {
+	// Reject anything that can't be a slug before touching the database.
+	if len(slug) < 20 || len(slug) > 64 || strings.Trim(slug, slugAlphabet) != "" {
+		return "", errNoReport
+	}
+	rec, err := s.App.FindFirstRecordByFilter("reports", "slug = {:slug}", map[string]any{"slug": slug})
+	if err != nil {
+		return "", errNoReport
+	}
+	return rec.GetString("html"), nil
+}
+
+var errNoReport = errors.New("report not found")
 
 // LatestHTML returns the most recent stored report's email HTML.
 func (s *Service) LatestHTML() (string, error) {
