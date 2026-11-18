@@ -58,9 +58,10 @@ func main() {
 		Listings: report.CacheListings(report.ITunesListings(runner.Client), 10*time.Minute),
 	}
 	reports := &report.Service{
-		App:        app,
-		Recipients: splitList(os.Getenv("ASO_REPORT_TO")),
-		PublicURL:  os.Getenv("ASO_PUBLIC_URL"),
+		App:         app,
+		Recipients:  splitList(os.Getenv("ASO_REPORT_TO")),
+		PublicURL:   os.Getenv("ASO_PUBLIC_URL"),
+		FrontendURL: os.Getenv("ASO_FRONTEND_URL"),
 		Gen: &report.Generator{Agent: &report.Agent{
 			Client: anthropic.NewClient(), // ANTHROPIC_API_KEY
 			Model:  envString("ASO_REPORT_MODEL", report.DefaultModel),

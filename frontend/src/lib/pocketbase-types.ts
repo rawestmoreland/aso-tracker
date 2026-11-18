@@ -13,6 +13,7 @@ export const Collections = {
 	Superusers: "_superusers",
 	Keywords: "keywords",
 	LatestRanks: "latest_ranks",
+	PublicReports: "public_reports",
 	RankHistory: "rank_history",
 	TrackedApps: "tracked_apps",
 	Users: "users",
@@ -120,6 +121,16 @@ export type LatestRanksRecord<Tapp = unknown, Tchecked_at = unknown, Tkeyword = 
 	term: string
 }
 
+// Read-only view over `reports` (see backend/migrations/1794800000_report_views.go).
+// Only matches when the request carries the record's slug: ?slug=...
+export type PublicReportsRecord<Tview = unknown> = {
+	created: IsoAutoDateString
+	id: string
+	slug: string
+	subject: string
+	view: null | Tview
+}
+
 export type RankHistoryRecord = {
 	app: RecordIdString
 	checked_at: IsoAutoDateString
@@ -162,6 +173,7 @@ export type OtpsResponse<Texpand = unknown> = Required<OtpsRecord> & BaseSystemF
 export type SuperusersResponse<Texpand = unknown> = Required<SuperusersRecord> & AuthSystemFields<Texpand>
 export type KeywordsResponse<Texpand = unknown> = Required<KeywordsRecord> & BaseSystemFields<Texpand>
 export type LatestRanksResponse<Tapp = unknown, Tchecked_at = unknown, Tkeyword = unknown, Trank = unknown, Trank_7d = unknown, Trank_first = unknown, Texpand = unknown> = Required<LatestRanksRecord<Tapp, Tchecked_at, Tkeyword, Trank, Trank_7d, Trank_first>> & BaseSystemFields<Texpand>
+export type PublicReportsResponse<Tview = unknown, Texpand = unknown> = Required<PublicReportsRecord<Tview>> & BaseSystemFields<Texpand>
 export type RankHistoryResponse<Texpand = unknown> = Required<RankHistoryRecord> & BaseSystemFields<Texpand>
 export type TrackedAppsResponse<Texpand = unknown> = Required<TrackedAppsRecord> & BaseSystemFields<Texpand>
 export type UsersResponse<Texpand = unknown> = Required<UsersRecord> & AuthSystemFields<Texpand>
@@ -176,6 +188,7 @@ export type CollectionRecords = {
 	_superusers: SuperusersRecord
 	keywords: KeywordsRecord
 	latest_ranks: LatestRanksRecord
+	public_reports: PublicReportsRecord
 	rank_history: RankHistoryRecord
 	tracked_apps: TrackedAppsRecord
 	users: UsersRecord
@@ -189,6 +202,7 @@ export type CollectionResponses = {
 	_superusers: SuperusersResponse
 	keywords: KeywordsResponse
 	latest_ranks: LatestRanksResponse
+	public_reports: PublicReportsResponse
 	rank_history: RankHistoryResponse
 	tracked_apps: TrackedAppsResponse
 	users: UsersResponse

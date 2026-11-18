@@ -27,7 +27,11 @@ type Service struct {
 	// Recipients is the default list. When empty, the report goes to the
 	// instance's superusers.
 	Recipients []string
-	// PublicURL is the site's public origin (ASO_PUBLIC_URL), used to build
+	// FrontendURL is the web app's origin (ASO_FRONTEND_URL). When set, report
+	// links point at its /reports/{slug} page; otherwise at the backend's
+	// server-rendered copy.
+	FrontendURL string
+	// PublicURL is the backend's public origin (ASO_PUBLIC_URL), used to build
 	// each report's permalink. When empty it falls back to PocketBase's
 	// Application URL setting, unless that is still the localhost default.
 	PublicURL string
@@ -78,7 +82,11 @@ func (s *Service) Run(ctx context.Context, opt RunOptions) (*Result, error) {
 		return nil, err
 	}
 	slug := security.RandomStringWithAlphabet(24, slugAlphabet)
-	rec, err := s.save(rep, to, slug)
+	viewJSON, err := ViewJSON(rep.Content, rep.Snapshot, rep.Meta)
+	if err != nil {
+		return nil, fmt.Errorf("build web view: %w", err)
+	}
+	rec, err := s.save(rep, to, slug, viewJSON)
 	if err != nil {
 		return nil, fmt.Errorf("store report: %w", err)
 	}
@@ -163,14 +171,19 @@ func (s *Service) baseURL() string {
 	return strings.TrimRight(base, "/")
 }
 
+// viewURL is the link readers get: the frontend page when configured, else the
+// backend's server-rendered permalink, else "" (no usable public origin).
 func (s *Service) viewURL(slug string) string {
+	if fe := strings.TrimRight(strings.TrimSpace(s.FrontendURL), "/"); fe != "" {
+		return fe + "/reports/" + slug
+	}
 	if base := s.baseURL(); base != "" {
 		return base + ViewPath(slug)
 	}
 	return ""
 }
 
-func (s *Service) save(rep *Report, to []mail.Address, slug string) (*core.Record, error) {
+func (s *Service) save(rep *Report, to []mail.Address, slug string, viewJSON []byte) (*core.Record, error) {
 	col, err := s.App.FindCollectionByNameOrId("reports")
 	if err != nil {
 		return nil, err
@@ -188,6 +201,7 @@ func (s *Service) save(rep *Report, to []mail.Address, slug string) (*core.Recor
 	rec.Set("usage", map[string]any{"turns": rep.Usage.Turns, "input_tokens": rep.Usage.Input,
 		"output_tokens": rep.Usage.Output, "cache_read_tokens": rep.Usage.CacheRead, "cache_write_tokens": rep.Usage.CacheWrite})
 	rec.Set("html", rep.Email.HTML)
+	rec.Set("view", types.JSONRaw(viewJSON))
 	rec.Set("recipients", strings.Join(rcpt, ", "))
 	return rec, s.App.Save(rec)
 }
