@@ -1,6 +1,7 @@
 package report
 
 import (
+	"encoding/json"
 	"os"
 	"strings"
 	"testing"
@@ -52,6 +53,14 @@ func TestRenderSample(t *testing.T) {
 			t.Fatal(err)
 		}
 		if err := os.WriteFile(dir+"/sample.txt", []byte(e.Text), 0o644); err != nil {
+			t.Fatal(err)
+		}
+		// The same resolved report as JSON, for developing the web page against.
+		raw, err := ViewJSON(c, snap, Meta{})
+		if err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(dir+"/sample.view.json", raw, 0o644); err != nil {
 			t.Fatal(err)
 		}
 	}
@@ -122,5 +131,60 @@ func TestWebLinkOnlyWhenURLSet(t *testing.T) {
 	}
 	if !strings.Contains(linked.HTML, `href="`+u+`"`) || !strings.Contains(linked.Text, "View in browser: "+u) {
 		t.Error("emailed copy is missing the permalink")
+	}
+}
+
+func TestViewJSONContract(t *testing.T) {
+	_, snap, c := sampleEmail(t)
+	raw, err := ViewJSON(c, snap, Meta{IconURL: "https://example.com/i.png"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	var v map[string]any
+	if err := json.Unmarshal(raw, &v); err != nil {
+		t.Fatal(err)
+	}
+
+	if v["version"] != float64(1) || v["app_name"] != "Habitual" || v["icon_url"] != "https://example.com/i.png" {
+		t.Errorf("header fields wrong: version=%v app=%v", v["version"], v["app_name"])
+	}
+	if mood := v["mood"].(map[string]any); mood["key"] != "climbing" || mood["label"] != "On the climb" {
+		t.Errorf("mood = %v", mood)
+	}
+	if got := len(v["hero_series"].([]any)); got != SparkDays {
+		t.Errorf("hero_series has %d points", got)
+	}
+
+	// No email-only presentation leaks into the contract.
+	for _, banned := range []string{"#E8A317", "#1E7F4F", "Fg", "Bg", "RankColor", "Spark"} {
+		if strings.Contains(string(raw), banned) {
+			t.Errorf("JSON contains presentation detail %q", banned)
+		}
+	}
+
+	// A keyword row carries semantic data: streaks went #12 -> #3, tier summit.
+	hl := v["highlights"].([]any)
+	var streaks map[string]any
+	for _, h := range hl {
+		if kw, ok := h.(map[string]any)["keyword"].(map[string]any); ok && kw["term"] == "streaks" {
+			streaks = kw
+		}
+	}
+	if streaks == nil {
+		t.Fatal("streaks highlight has no keyword row")
+	}
+	if streaks["rank"] != float64(3) || streaks["rank_text"] != "#3" || streaks["tier"] != "summit" ||
+		streaks["change"].(map[string]any)["kind"] != "up" || len(streaks["daily_ranks"].([]any)) != SparkDays {
+		t.Errorf("streaks row = %v", streaks)
+	}
+
+	// Empty lists serialise as [] so the frontend never meets null.
+	c.Highlights, c.Quests = nil, nil
+	c.Climbers.Items, c.Fallers.Items, c.Rivals.Callouts = nil, nil, nil
+	raw, _ = ViewJSON(c, snap, Meta{})
+	for _, want := range []string{`"highlights":[]`, `"quests":[]`, `"callouts":[]`} {
+		if !strings.Contains(string(raw), want) {
+			t.Errorf("expected %s in %s", want, raw)
+		}
 	}
 }

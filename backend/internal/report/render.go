@@ -3,6 +3,7 @@ package report
 import (
 	"bytes"
 	_ "embed"
+	"encoding/json"
 	"fmt"
 	"html/template"
 	"strings"
@@ -34,17 +35,21 @@ const (
 	heroBarMin = 10
 )
 
+// moodStyle is the per-mood look. The colours are for the email only; the
+// JSON carries just the key, label and emoji and the web page picks its own.
 type moodStyle struct {
-	Label, Emoji     string
-	From, To, Accent template.CSS
+	Key              string       `json:"key"`
+	Label            string       `json:"label"`
+	Emoji            string       `json:"emoji"`
+	From, To, Accent template.CSS `json:"-"`
 }
 
 var moodStyles = map[string]moodStyle{
-	"summit":   {"Summit week", "🏔️", "#F59E0B", "#DC4C1B", "#E8A317"},
-	"climbing": {"On the climb", "🧗", "#0F766E", "#2F9E6B", "#2F9E6B"},
-	"steady":   {"Steady ground", "⛺", "#335F8A", "#5B8DB8", "#3B82C4"},
-	"slipping": {"Losing altitude", "🪨", "#9A5B13", "#C2410C", "#C2410C"},
-	"storm":    {"Storm warning", "⛈️", "#1F2937", "#4B5563", "#B3261E"},
+	"summit":   {"summit", "Summit week", "🏔️", "#F59E0B", "#DC4C1B", "#E8A317"},
+	"climbing": {"climbing", "On the climb", "🧗", "#0F766E", "#2F9E6B", "#2F9E6B"},
+	"steady":   {"steady", "Steady ground", "⛺", "#335F8A", "#5B8DB8", "#3B82C4"},
+	"slipping": {"slipping", "Losing altitude", "🪨", "#9A5B13", "#C2410C", "#C2410C"},
+	"storm":    {"storm", "Storm warning", "⛈️", "#1F2937", "#4B5563", "#B3261E"},
 }
 
 // Meta is non-ranking context for the email chrome.
@@ -68,74 +73,137 @@ type bar struct {
 	Alpha template.CSS // opacity for hero bars, "" otherwise
 }
 
+// chip is a small status pill. Kind is one of up, down, flat, new, out, none.
 type chip struct {
-	Text   string
-	Fg, Bg template.CSS
+	Text   string       `json:"text"`
+	Kind   string       `json:"kind"`
+	Fg, Bg template.CSS `json:"-"`
+}
+
+func newChip(kind, text string) chip {
+	c := chip{Text: text, Kind: kind, Fg: colFlat, Bg: colFlatBg}
+	switch kind {
+	case "up":
+		c.Fg, c.Bg = colUp, colUpBg
+	case "down", "out":
+		c.Fg, c.Bg = colDown, colDownBg
+	case "new":
+		c.Fg, c.Bg = colNewFg, colNewBg
+	}
+	return c
 }
 
 type tile struct {
-	Label, Value, Sub string
-	Delta             chip
+	Label string `json:"label"`
+	Value string `json:"value"`
+	Sub   string `json:"sub"`
+	Delta chip   `json:"delta"`
 }
 
+// rowView is one keyword: where you rank now and how it got there. Tier is
+// summit (top 3), ridge (top 10), foothills (top 30) or base.
 type rowView struct {
-	Term, Country, Rank string
-	RankColor           template.CSS
-	Change              chip
-	Detail              string
-	Spark               []bar
-	Comment             string
+	Term      string       `json:"term"`
+	Country   string       `json:"country"`
+	Rank      string       `json:"rank_text"`
+	RankNum   int          `json:"rank"` // 0 = not in the top 200
+	Tier      string       `json:"tier"`
+	RankColor template.CSS `json:"-"`
+	Change    chip         `json:"change"`
+	Detail    string       `json:"detail"`
+	Spark     []bar        `json:"-"`
+	Daily     []int        `json:"daily_ranks"` // oldest first; -1 = not tracked yet
+	Comment   string       `json:"comment,omitempty"`
 }
 
 type highlightView struct {
-	Emoji, Title, Body string
-	Border             template.CSS
-	Row                *rowView
+	Kind   string       `json:"kind"`
+	Emoji  string       `json:"emoji"`
+	Title  string       `json:"title"`
+	Body   string       `json:"body"`
+	Border template.CSS `json:"-"`
+	Row    *rowView     `json:"keyword,omitempty"`
 }
 
 type sectionView struct {
-	Title, Intro string
-	Rows         []rowView
+	Title string    `json:"title"`
+	Intro string    `json:"intro"`
+	Rows  []rowView `json:"rows"`
 }
 
 type calloutView struct {
-	App, Note string
-	Row       *rowView
+	App  string   `json:"app"`
+	Note string   `json:"note"`
+	Row  *rowView `json:"keyword,omitempty"`
 }
 
 type questView struct {
-	N                                      int
-	Title, Why, How                        string
-	Effort, Impact                         string
-	EffortFg, EffortBg, ImpactFg, ImpactBg template.CSS
-	Rows                                   []rowView
+	N         int    `json:"n"`
+	Title     string `json:"title"`
+	Why       string `json:"why"`
+	How       string `json:"how"`
+	Effort    string `json:"effort"` // display label
+	Impact    string `json:"impact"` // display label
+	EffortKey string `json:"effort_key"`
+	ImpactKey string `json:"impact_key"`
+
+	EffortFg, EffortBg, ImpactFg, ImpactBg template.CSS `json:"-"`
+	Rows                                   []rowView    `json:"keywords"`
 }
 
+// viewVersion is bumped when the JSON shape changes incompatibly; the web page
+// checks it before rendering.
+const viewVersion = 1
+
+// view is the fully resolved report. It is rendered to HTML for email and
+// serialised to JSON (colours excluded) for the web page, so both show the
+// same numbers and wording.
 type view struct {
-	Subject, Preheader    string
-	Mood                  moodStyle
-	Week, AppName         string
-	IconURL, WebURL       string
-	Headline, Intro       string
-	ScoreNote             string
-	Hero                  []bar
-	Tiles                 []tile
-	Highlights            []highlightView
-	Climbers, Fallers     sectionView
-	RivalTitle, RivalBody string
-	Callouts              []calloutView
-	Quests                []questView
-	SignOff               string
-	Footer                string
+	Version    int             `json:"version"`
+	Subject    string          `json:"subject"`
+	Preheader  string          `json:"preheader"`
+	Mood       moodStyle       `json:"mood"`
+	Week       string          `json:"week"`
+	AppName    string          `json:"app_name"`
+	IconURL    string          `json:"icon_url"`
+	WebURL     string          `json:"-"`
+	Headline   string          `json:"headline"`
+	Intro      string          `json:"intro"`
+	ScoreNote  string          `json:"scoreboard_note"`
+	Hero       []bar           `json:"-"`
+	HeroSeries []float64       `json:"hero_series"` // daily visibility, oldest first
+	Tiles      []tile          `json:"tiles"`
+	Highlights []highlightView `json:"highlights"`
+	Climbers   sectionView     `json:"climbers"`
+	Fallers    sectionView     `json:"fallers"`
+	RivalTitle string          `json:"rivals_title"`
+	RivalBody  string          `json:"rivals_body"`
+	Callouts   []calloutView   `json:"callouts"`
+	Quests     []questView     `json:"quests"`
+	SignOff    string          `json:"sign_off"`
+	Footer     string          `json:"footer"`
+}
+
+func tierName(rank int) string {
+	switch {
+	case rank >= 1 && rank <= 3:
+		return "summit"
+	case rank >= 1 && rank <= 10:
+		return "ridge"
+	case rank >= 1 && rank <= 30:
+		return "foothills"
+	default:
+		return "base"
+	}
 }
 
 func tierColor(rank int) template.CSS {
-	switch {
-	case rank >= 1 && rank <= 3:
+	switch tierName(rank) {
+	case "summit":
 		return colSummit
-	case rank >= 1 && rank <= 10:
+	case "ridge":
 		return colRidge
-	case rank >= 1 && rank <= 30:
+	case "foothills":
 		return colFoot
 	default:
 		return colBase
@@ -193,36 +261,36 @@ func heroBars(series []float64) []bar {
 func deltaChip(change int, hasPrev bool) chip {
 	switch {
 	case !hasPrev:
-		return chip{"first week", colFlat, colFlatBg}
+		return newChip("none", "first week")
 	case change > 0:
-		return chip{fmt.Sprintf("▲ %d", change), colUp, colUpBg}
+		return newChip("up", fmt.Sprintf("▲ %d", change))
 	case change < 0:
-		return chip{fmt.Sprintf("▼ %d", -change), colDown, colDownBg}
+		return newChip("down", fmt.Sprintf("▼ %d", -change))
 	default:
-		return chip{"no change", colFlat, colFlatBg}
+		return newChip("flat", "no change")
 	}
 }
 
 func rowFor(f KeywordFact) rowView {
-	r := rowView{Term: f.Term, Country: strings.ToUpper(f.Country), Rank: rankText(f.Rank),
-		RankColor: tierColor(f.Rank), Spark: sparkBars(f.DailyRanks)}
+	r := rowView{Term: f.Term, Country: strings.ToUpper(f.Country), Rank: rankText(f.Rank), RankNum: f.Rank,
+		Tier: tierName(f.Rank), RankColor: tierColor(f.Rank), Spark: sparkBars(f.DailyRanks), Daily: f.DailyRanks}
 	prev := ""
 	if f.PrevRank != nil {
 		prev = rankText(*f.PrevRank)
 	}
 	switch f.Move {
 	case "up":
-		r.Change, r.Detail = chip{fmt.Sprintf("▲ %d", f.Change), colUp, colUpBg}, "from "+prev
+		r.Change, r.Detail = newChip("up", fmt.Sprintf("▲ %d", f.Change)), "from "+prev
 	case "down":
-		r.Change, r.Detail = chip{fmt.Sprintf("▼ %d", -f.Change), colDown, colDownBg}, "from "+prev
+		r.Change, r.Detail = newChip("down", fmt.Sprintf("▼ %d", -f.Change)), "from "+prev
 	case "entered":
-		r.Change, r.Detail = chip{"NEW", colNewFg, colNewBg}, "entered the top 200"
+		r.Change, r.Detail = newChip("new", "NEW"), "entered the top 200"
 	case "dropped_out":
-		r.Change, r.Detail = chip{"OUT", colDown, colDownBg}, "was "+prev
+		r.Change, r.Detail = newChip("out", "OUT"), "was "+prev
 	case "flat":
-		r.Change, r.Detail = chip{"steady", colFlat, colFlatBg}, "unchanged"
+		r.Change, r.Detail = newChip("flat", "steady"), "unchanged"
 	default:
-		r.Change, r.Detail = chip{"new", colNewFg, colNewBg}, "just started tracking"
+		r.Change, r.Detail = newChip("new", "new"), "just started tracking"
 	}
 	if f.BestRival != nil {
 		r.Detail += fmt.Sprintf(" · %s is %s", f.BestRival.App, rankText(f.BestRival.Rank))
@@ -244,11 +312,13 @@ func buildView(c *Content, s *Snapshot, m Meta) view {
 	}
 	me := s.Me
 	v := view{
+		Version: viewVersion,
 		Subject: c.Subject, Preheader: c.Preheader, Mood: mood, AppName: s.Mine.Name, IconURL: m.IconURL, WebURL: m.WebURL,
 		Week:     fmt.Sprintf("%s – %s", s.AsOf.AddDate(0, 0, -s.Days).Format("Jan 2"), s.AsOf.Format("Jan 2, 2006")),
 		Headline: c.Headline, Intro: c.Intro, ScoreNote: c.ScoreboardNote,
-		Hero:    heroBars(me.DailyVisibility),
-		SignOff: c.SignOff,
+		Hero:       heroBars(me.DailyVisibility),
+		HeroSeries: me.DailyVisibility,
+		SignOff:    c.SignOff,
 		Footer: fmt.Sprintf("Tracking %d keywords across %d competitors. Ranks come from live App Store search results.",
 			me.Keywords, len(s.Rivals)),
 	}
@@ -257,11 +327,11 @@ func buildView(c *Content, s *Snapshot, m Meta) view {
 	if me.VisibilityChange != nil {
 		switch ch := *me.VisibilityChange; {
 		case ch > 0:
-			vis = chip{fmt.Sprintf("▲ %.1f", ch), colUp, colUpBg}
+			vis = newChip("up", fmt.Sprintf("▲ %.1f", ch))
 		case ch < 0:
-			vis = chip{fmt.Sprintf("▼ %.1f", -ch), colDown, colDownBg}
+			vis = newChip("down", fmt.Sprintf("▼ %.1f", -ch))
 		default:
-			vis = chip{"no change", colFlat, colFlatBg}
+			vis = newChip("flat", "no change")
 		}
 	}
 	v.Tiles = []tile{
@@ -281,7 +351,7 @@ func buildView(c *Content, s *Snapshot, m Meta) view {
 	emoji := map[string]string{"win": "🚀", "loss": "📉", "surprise": "✨", "milestone": "🏆"}
 	border := map[string]template.CSS{"win": colUp, "loss": colDown, "surprise": colFoot, "milestone": colSummit}
 	for _, h := range c.Highlights {
-		hv := highlightView{Emoji: emoji[h.Kind], Title: stripLeadingEmoji(h.Title), Body: h.Body, Border: border[h.Kind]}
+		hv := highlightView{Kind: h.Kind, Emoji: emoji[h.Kind], Title: stripLeadingEmoji(h.Title), Body: h.Body, Border: border[h.Kind]}
 		if h.KeywordID != "" {
 			hv.Row = row(h.KeywordID)
 		}
@@ -313,7 +383,10 @@ func buildView(c *Content, s *Snapshot, m Meta) view {
 	effort := map[string]string{"quick": "Quick win", "medium": "Half a day", "big": "Bigger project"}
 	for i, q := range c.Quests {
 		qv := questView{N: i + 1, Title: q.Title, Why: q.Why, How: q.How,
-			Effort: effort[q.Effort], Impact: impactLabel(q.Impact)}
+			Effort: effort[q.Effort], Impact: impactLabel(q.Impact), EffortKey: q.Effort, ImpactKey: q.Impact}
+		if qv.ImpactKey == "" {
+			qv.ImpactKey = "medium"
+		}
 		qv.EffortFg, qv.EffortBg = colFlat, colFlatBg
 		switch q.Impact {
 		case "high":
@@ -330,7 +403,35 @@ func buildView(c *Content, s *Snapshot, m Meta) view {
 		}
 		v.Quests = append(v.Quests, qv)
 	}
+
+	// The JSON should say [] rather than null for empty lists.
+	if v.Highlights == nil {
+		v.Highlights = []highlightView{}
+	}
+	if v.Callouts == nil {
+		v.Callouts = []calloutView{}
+	}
+	if v.Quests == nil {
+		v.Quests = []questView{}
+	}
+	if v.Climbers.Rows == nil {
+		v.Climbers.Rows = []rowView{}
+	}
+	if v.Fallers.Rows == nil {
+		v.Fallers.Rows = []rowView{}
+	}
+	for i := range v.Quests {
+		if v.Quests[i].Rows == nil {
+			v.Quests[i].Rows = []rowView{}
+		}
+	}
 	return v
+}
+
+// ViewJSON resolves a report into the JSON the web page renders. It is the
+// same data the email is built from, minus the email-only colours.
+func ViewJSON(c *Content, s *Snapshot, m Meta) ([]byte, error) {
+	return json.Marshal(buildView(c, s, m))
 }
 
 func impactLabel(impact string) string {

@@ -22,7 +22,7 @@ func TestPermalinks(t *testing.T) {
 	rep := &Report{Content: c, Snapshot: snap, Email: e}
 
 	slug := "AbCdEfGhIjKlMnOpQrStUvWx"
-	if _, err := svc.save(rep, []mail.Address{{Address: "a@example.com"}}, slug); err != nil {
+	if _, err := svc.save(rep, []mail.Address{{Address: "a@example.com"}}, slug, []byte(`{"version":1}`)); err != nil {
 		t.Fatalf("save: %v", err)
 	}
 
@@ -40,7 +40,7 @@ func TestPermalinks(t *testing.T) {
 	}
 
 	// A second report with the same slug violates the unique index.
-	if _, err := svc.save(rep, nil, slug); err == nil {
+	if _, err := svc.save(rep, nil, slug, []byte(`{}`)); err == nil {
 		t.Error("duplicate slug must be rejected")
 	}
 
@@ -66,5 +66,22 @@ func TestBaseURLIgnoresLocalhostDefault(t *testing.T) {
 	app.Settings().Meta.AppURL = "https://aso.example.com"
 	if got := svc.viewURL("x"); !strings.HasPrefix(got, "https://aso.example.com/api/aso/report/view/") {
 		t.Errorf("AppURL fallback = %q", got)
+	}
+}
+
+func TestViewURLPrefersFrontend(t *testing.T) {
+	app, err := tests.NewTestApp()
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer app.Cleanup()
+
+	svc := &Service{App: app, PublicURL: "https://api.example.com", FrontendURL: "https://aso.example.com/"}
+	if got := svc.viewURL("abc"); got != "https://aso.example.com/reports/abc" {
+		t.Errorf("frontend link = %q", got)
+	}
+	svc.FrontendURL = ""
+	if got := svc.viewURL("abc"); got != "https://api.example.com/api/aso/report/view/abc" {
+		t.Errorf("backend fallback = %q", got)
 	}
 }
