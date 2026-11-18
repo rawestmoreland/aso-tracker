@@ -23,6 +23,15 @@ type App struct {
 	BundleID   string `json:"bundleId"`
 	SellerName string `json:"sellerName"`
 	Artwork    string `json:"artworkUrl100"`
+
+	// Listing details, present on both search and lookup responses.
+	Description        string  `json:"description"`
+	PrimaryGenre       string  `json:"primaryGenreName"`
+	AverageRating      float64 `json:"averageUserRating"`
+	RatingCount        int     `json:"userRatingCount"`
+	Version            string  `json:"version"`
+	CurrentVersionDate string  `json:"currentVersionReleaseDate"`
+	ReleaseNotes       string  `json:"releaseNotes"`
 }
 
 type response struct {
