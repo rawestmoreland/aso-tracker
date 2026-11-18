@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/anthropics/anthropic-sdk-go/v2"
+	"github.com/joho/godotenv"
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 
 	"ganigeorgiev.com/pocketbase/dbx"
@@ -29,6 +30,12 @@ import (
 )
 
 func main() {
+	// Optional backend/.env for local development. Variables already set in the
+	// real environment (Docker, a host's secrets) take precedence over the file.
+	if err := godotenv.Load(); err != nil && !errors.Is(err, os.ErrNotExist) {
+		log.Fatalf("reading .env: %v", err)
+	}
+
 	app := pocketbase.New()
 
 	migratecmd.MustRegister(app, app.RootCmd, migratecmd.Config{

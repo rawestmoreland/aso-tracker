@@ -3,3 +3,8 @@ pb_data/
 *.http
 
 mcp/
+
+# local secrets
+.env
+.env.*
+!.env.example

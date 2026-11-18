@@ -14,6 +14,7 @@ ASO (App Store Optimization) keyword rank tracker. A daily job searches the iTun
 Backend (run from `backend/`):
 
 - `make run` — `go run . serve --http localhost:8080` (PocketBase dashboard at `/_/`)
+- Config comes from environment variables; `main.go` also loads an optional git-ignored `backend/.env` via `godotenv` (real env vars win). See `backend/.env.example`.
 - `go test ./...` — all tests; single test: `go test ./internal/itunes -run TestName`
 - Migrations in `backend/migrations/` are auto-generated when collections are changed in the dashboard while running via `go run` (`Automigrate` is enabled only when `IsProbablyGoRun`). Commit the generated files.
 
