@@ -104,3 +104,23 @@ func TestNormalizeKeepsHeadersOnOneLine(t *testing.T) {
 		t.Errorf("subject = %q", c.Subject)
 	}
 }
+
+func TestWebLinkOnlyWhenURLSet(t *testing.T) {
+	_, snap, c := sampleEmail(t)
+	plain, err := Render(c, snap, Meta{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if strings.Contains(plain.HTML, "View it in your browser") || strings.Contains(plain.Text, "View in browser") {
+		t.Error("the web copy must not link to itself")
+	}
+
+	const u = "https://aso.example.com/api/aso/report/view/abc123"
+	linked, err := Render(c, snap, Meta{WebURL: u})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(linked.HTML, `href="`+u+`"`) || !strings.Contains(linked.Text, "View in browser: "+u) {
+		t.Error("emailed copy is missing the permalink")
+	}
+}

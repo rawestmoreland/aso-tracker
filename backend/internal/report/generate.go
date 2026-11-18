@@ -16,7 +16,8 @@ const Window = 7
 type Report struct {
 	Content  *Content
 	Snapshot *Snapshot
-	Email    *Email
+	Email    *Email // the web version: no "view in browser" link
+	Meta     Meta
 	Usage    Usage
 	Model    string
 }
@@ -58,7 +59,8 @@ func (g *Generator) Generate(ctx context.Context) (*Report, error) {
 		return nil, err
 	}
 
-	email, err := Render(c, snap, Meta{IconURL: g.iconURL(ctx, d)})
+	meta := Meta{IconURL: g.iconURL(ctx, d)}
+	email, err := Render(c, snap, meta)
 	if err != nil {
 		return nil, fmt.Errorf("render email: %w", err)
 	}
@@ -66,7 +68,7 @@ func (g *Generator) Generate(ctx context.Context) (*Report, error) {
 	if model == "" {
 		model = DefaultModel
 	}
-	return &Report{Content: c, Snapshot: snap, Email: email, Usage: usage, Model: model}, nil
+	return &Report{Content: c, Snapshot: snap, Email: email, Meta: meta, Usage: usage, Model: model}, nil
 }
 
 // iconURL fetches your app's icon for the masthead. The icon is decoration, so

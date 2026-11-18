@@ -50,6 +50,9 @@ var moodStyles = map[string]moodStyle{
 // Meta is non-ranking context for the email chrome.
 type Meta struct {
 	IconURL string // optional app icon
+	// WebURL, when set, adds a "view in browser" link. Leave it empty for the
+	// copy served at that URL, which would otherwise link to itself.
+	WebURL string
 }
 
 // Email is the finished message.
@@ -112,7 +115,7 @@ type view struct {
 	Subject, Preheader    string
 	Mood                  moodStyle
 	Week, AppName         string
-	IconURL               string
+	IconURL, WebURL       string
 	Headline, Intro       string
 	ScoreNote             string
 	Hero                  []bar
@@ -241,7 +244,7 @@ func buildView(c *Content, s *Snapshot, m Meta) view {
 	}
 	me := s.Me
 	v := view{
-		Subject: c.Subject, Preheader: c.Preheader, Mood: mood, AppName: s.Mine.Name, IconURL: m.IconURL,
+		Subject: c.Subject, Preheader: c.Preheader, Mood: mood, AppName: s.Mine.Name, IconURL: m.IconURL, WebURL: m.WebURL,
 		Week:     fmt.Sprintf("%s – %s", s.AsOf.AddDate(0, 0, -s.Days).Format("Jan 2"), s.AsOf.Format("Jan 2, 2006")),
 		Headline: c.Headline, Intro: c.Intro, ScoreNote: c.ScoreboardNote,
 		Hero:    heroBars(me.DailyVisibility),
@@ -371,6 +374,9 @@ func renderText(v view) string {
 		}
 	}
 
+	if v.WebURL != "" {
+		w("View in browser: %s\n", v.WebURL)
+	}
 	w("THE WEEKLY CLIMB · %s · %s", v.AppName, v.Week)
 	w("%s %s", strings.ToUpper(v.Mood.Label), "")
 	w("%s\n", v.Headline)

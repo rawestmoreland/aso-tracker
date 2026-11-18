@@ -60,6 +60,7 @@ func main() {
 	reports := &report.Service{
 		App:        app,
 		Recipients: splitList(os.Getenv("ASO_REPORT_TO")),
+		PublicURL:  os.Getenv("ASO_PUBLIC_URL"),
 		Gen: &report.Generator{Agent: &report.Agent{
 			Client: anthropic.NewClient(), // ANTHROPIC_API_KEY
 			Model:  envString("ASO_REPORT_MODEL", report.DefaultModel),
@@ -134,6 +135,23 @@ func main() {
 			}
 			return e.HTML(http.StatusOK, html)
 		}).Bind(apis.RequireSuperuserAuth())
+
+		// Each report's permalink. Public: the unguessable slug is the credential.
+		// GET /api/aso/report/view/{slug}
+		se.Router.GET("/api/aso/report/view/{slug}", func(e *core.RequestEvent) error {
+			html, err := reports.HTMLBySlug(e.Request.PathValue("slug"))
+			if err != nil {
+				return e.NotFoundError("Report not found.", nil)
+			}
+			h := e.Response.Header()
+			h.Set("X-Robots-Tag", "noindex, nofollow, noarchive")
+			// Keep the slug out of Referer headers sent to the app-icon CDN.
+			h.Set("Referrer-Policy", "no-referrer")
+			h.Set("Cache-Control", "private, max-age=300")
+			h.Set("Content-Security-Policy",
+				"default-src 'none'; img-src https:; style-src 'unsafe-inline'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'")
+			return e.HTML(http.StatusOK, html)
+		})
 
 		// A design preview built from made-up data: no auth, no database, no API cost.
 		se.Router.GET("/api/aso/report/sample", func(e *core.RequestEvent) error {
