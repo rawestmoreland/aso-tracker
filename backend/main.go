@@ -118,7 +118,11 @@ func main() {
 					return e.JSON(http.StatusConflict, map[string]string{"error": err.Error()})
 				}
 				if err != nil {
-					return e.InternalServerError("report failed", err)
+					// Only a superuser reaches this route, so show the real cause (an
+					// API error, a mail failure) instead of PocketBase's generic 500.
+					// res is set when the report was saved but sending failed.
+					app.Logger().Error("manual weekly report", "err", err)
+					return e.JSON(http.StatusInternalServerError, map[string]any{"error": err.Error(), "result": res})
 				}
 				return e.JSON(http.StatusOK, res)
 			}
