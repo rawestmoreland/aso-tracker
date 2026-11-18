@@ -111,7 +111,9 @@ func main() {
 			q := e.Request.URL.Query()
 			opt := report.RunOptions{Send: q.Get("send") != "false", To: splitList(q.Get("to"))}
 			if q.Get("wait") == "true" {
-				res, err := reports.Run(e.Request.Context(), opt)
+				// Detach from the caller's connection: if their client or proxy
+				// times out, the run (and its API spend) should still finish.
+				res, err := reports.Run(context.WithoutCancel(e.Request.Context()), opt)
 				if errors.Is(err, report.ErrAlreadyRunning) {
 					return e.JSON(http.StatusConflict, map[string]string{"error": err.Error()})
 				}

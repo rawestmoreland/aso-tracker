@@ -5,7 +5,10 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
+	"net"
 	"strings"
+	"time"
 
 	"github.com/anthropics/anthropic-sdk-go/v2"
 	"github.com/modelcontextprotocol/go-sdk/mcp"
@@ -15,6 +18,14 @@ import (
 const DefaultModel = "claude-opus-5-5"
 
 const maxTurns = 14
+
+// maxOutputTokens bounds one response. Adaptive thinking counts against it, so
+// leave generous headroom; you only pay for tokens actually generated.
+const maxOutputTokens = 32000
+
+// attemptsPerTurn is how often one Claude request is tried when the connection
+// drops or the API has a transient fault.
+const attemptsPerTurn = 3
 
 const systemPrompt = `You write "The Weekly Climb", a weekly email for the owner of an iOS app about how the app ranks in App Store search. People should look forward to it: it is well informed, warm, a little cheeky, and never padded.
 
@@ -65,6 +76,9 @@ type Agent struct {
 	Tools  *Tools
 	// Log receives progress lines; nil is silent.
 	Log func(msg string, args ...any)
+	// RetryDelay is the pause before the first retry, doubling after that.
+	// Zero means 5s.
+	RetryDelay time.Duration
 }
 
 func (a *Agent) log(msg string, args ...any) {
@@ -107,9 +121,9 @@ func (a *Agent) Write(ctx context.Context, brief string) (string, Usage, error) 
 	messages := []anthropic.BetaMessageParam{anthropic.NewBetaUserMessage(anthropic.NewBetaTextBlock(brief))}
 
 	for turn := 1; turn <= maxTurns; turn++ {
-		resp, err := a.Client.Beta.Messages.New(ctx, anthropic.BetaMessageNewParams{
+		resp, err := a.turn(ctx, turn, anthropic.BetaMessageNewParams{
 			Model:     model,
-			MaxTokens: 16000,
+			MaxTokens: maxOutputTokens,
 			System:    []anthropic.BetaTextBlockParam{{Text: systemPrompt}},
 			Messages:  messages,
 			Tools:     tools,
@@ -152,7 +166,7 @@ func (a *Agent) Write(ctx context.Context, brief string) (string, Usage, error) 
 				if !ok {
 					continue
 				}
-				text, isErr := callTool(ctx, cs, tu.Name, tu.JSON.Input.Raw())
+				text, isErr := callTool(ctx, cs, tu.Name, toolInput(tu))
 				a.log("report tool call", "tool", tu.Name, "error", isErr, "bytes", len(text))
 				results = append(results, anthropic.NewBetaToolResultBlock(tu.ID, text, isErr))
 			}
@@ -170,6 +184,76 @@ func (a *Agent) Write(ctx context.Context, brief string) (string, Usage, error) 
 		}
 	}
 	return "", usage, fmt.Errorf("claude did not finish within %d turns", maxTurns)
+}
+
+// turn sends one request, streaming the response, and retries transient
+// failures. Streaming keeps bytes flowing for the whole generation: a plain
+// request sits silent while the model thinks, and a proxy or load balancer
+// with an idle timeout will cut it (the API then reports 499 "client
+// disconnected").
+func (a *Agent) turn(ctx context.Context, n int, params anthropic.BetaMessageNewParams) (*anthropic.BetaMessage, error) {
+	delay := a.RetryDelay
+	if delay <= 0 {
+		delay = 5 * time.Second
+	}
+	for attempt := 1; ; attempt++ {
+		start := time.Now()
+		msg, err := a.stream(ctx, params)
+		if err == nil {
+			a.log("claude turn", "turn", n, "attempt", attempt, "seconds", int(time.Since(start).Seconds()),
+				"stop", string(msg.StopReason), "input_tokens", msg.Usage.InputTokens, "output_tokens", msg.Usage.OutputTokens)
+			return msg, nil
+		}
+		// A deliberate cancel (shutdown) is never retried; neither are real
+		// client errors such as a bad request.
+		if ctx.Err() != nil || attempt >= attemptsPerTurn || !transient(err) {
+			return nil, fmt.Errorf("after %ds: %w", int(time.Since(start).Seconds()), err)
+		}
+		a.log("claude request failed, retrying", "turn", n, "attempt", attempt,
+			"seconds", int(time.Since(start).Seconds()), "err", err)
+		select {
+		case <-time.After(delay):
+			delay *= 2
+		case <-ctx.Done():
+			return nil, ctx.Err()
+		}
+	}
+}
+
+func (a *Agent) stream(ctx context.Context, params anthropic.BetaMessageNewParams) (*anthropic.BetaMessage, error) {
+	st := a.Client.Beta.Messages.NewStreaming(ctx, params)
+	defer st.Close()
+	msg := anthropic.BetaMessage{}
+	for st.Next() {
+		if err := msg.Accumulate(st.Current()); err != nil {
+			return nil, err
+		}
+	}
+	if err := st.Err(); err != nil {
+		return nil, err
+	}
+	return &msg, nil
+}
+
+// transient reports whether retrying the same request could succeed: the
+// connection dropped (499, EOF, network error) or the API had a server fault.
+func transient(err error) bool {
+	var apiErr *anthropic.Error
+	if errors.As(err, &apiErr) {
+		return apiErr.StatusCode == 499 || apiErr.StatusCode == 408 || apiErr.StatusCode >= 500
+	}
+	var netErr net.Error
+	return errors.As(err, &netErr) || errors.Is(err, io.ErrUnexpectedEOF) || errors.Is(err, io.EOF)
+}
+
+// toolInput returns a tool call's arguments as JSON, whichever way the SDK
+// surfaced them.
+func toolInput(tu anthropic.BetaToolUseBlock) string {
+	if raw := tu.JSON.Input.Raw(); raw != "" {
+		return raw
+	}
+	b, _ := json.Marshal(tu.Input)
+	return string(b)
 }
 
 // toAnthropicTool converts an MCP tool definition to a Claude tool.
