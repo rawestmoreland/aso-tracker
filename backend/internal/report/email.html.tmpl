@@ -1,0 +1,206 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<meta name="supported-color-schemes" content="light dark">
+<title>{{.Subject}}</title>
+<style>
+  body { margin:0; padding:0; -webkit-text-size-adjust:100%; -ms-text-size-adjust:100%; }
+  table { border-collapse:collapse; }
+  img { border:0; }
+  a { color:inherit; }
+  @media only screen and (max-width:620px) {
+    .container { width:100% !important; min-width:0 !important; }
+    .px { padding-left:20px !important; padding-right:20px !important; }
+    .stack { display:block !important; width:100% !important; box-sizing:border-box; }
+    .stack-gap { margin-bottom:8px !important; }
+    .mini-spark { padding-top:6px !important; }
+    .h1 { font-size:28px !important; line-height:1.18 !important; }
+    .right-sm { text-align:left !important; padding-top:8px !important; }
+  }
+  @media (prefers-color-scheme: dark) {
+    .bg-page { background-color:#121316 !important; }
+    .bg-card { background-color:#1B1D22 !important; border-top-color:#2E3138 !important; }
+    .bg-soft { background-color:#24272D !important; }
+    .bd { border-color:#363A42 !important; }
+    .tx { color:#F1EEE8 !important; }
+    .tx-2 { color:#ABA698 !important; }
+  }
+</style>
+</head>
+<body class="bg-page" style="margin:0;padding:0;background-color:#F3EEE6;">
+
+<div style="display:none;max-height:0;overflow:hidden;opacity:0;font-size:1px;line-height:1px;color:#F3EEE6;">{{.Preheader}}&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;</div>
+
+{{define "spark"}}<table role="presentation" cellpadding="0" cellspacing="0" border="0" style="height:30px;"><tr>{{range .}}<td valign="bottom" style="padding:0 2px 0 0;"><div style="width:8px;height:{{.H}}px;background-color:{{.Color}};border-radius:2px 2px 0 0;font-size:0;line-height:0;">&nbsp;</div></td>{{end}}</tr></table>{{end}}
+
+{{define "chip"}}<span style="display:inline-block;padding:3px 9px;border-radius:999px;font-size:12px;line-height:16px;font-weight:700;letter-spacing:.2px;background-color:{{.Bg}};color:{{.Fg}};white-space:nowrap;">{{.Text}}</span>{{end}}
+
+{{define "kicker"}}<div style="font-family:-apple-system,'Segoe UI',Helvetica,Arial,sans-serif;font-size:12px;line-height:16px;letter-spacing:2px;text-transform:uppercase;font-weight:700;color:#9A9384;margin:0 0 6px;" class="tx-2">{{.}}</div>{{end}}
+
+{{define "mini"}}<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-top:12px;"><tr>
+  <td class="stack" valign="middle" style="font-family:-apple-system,'Segoe UI',Helvetica,Arial,sans-serif;padding:0 14px 0 0;"><span class="tx" style="font-size:14px;font-weight:700;color:#1D1B16;">{{.Term}}</span> <span class="tx-2" style="font-size:10px;font-weight:700;letter-spacing:1px;color:#8B8577;">{{.Country}}</span> &nbsp;<span style="white-space:nowrap;"><span class="tx-2" style="font-size:11px;color:#8B8577;">you</span> <span style="font-family:Georgia,'Times New Roman',serif;font-size:20px;font-weight:700;color:{{.RankColor}};">{{.Rank}}</span> &nbsp;{{template "chip" .Change}}</span></td>
+  <td class="stack mini-spark" valign="middle" style="padding:0;">{{template "spark" .Spark}}</td>
+</tr></table>{{end}}
+
+{{define "row"}}<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" class="bg-soft bd" style="background-color:#F8F5EF;border:1px solid #E7E1D6;border-radius:14px;border-collapse:separate;margin-bottom:12px;">
+  <tr><td style="padding:16px 18px;">
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"><tr>
+      <td class="stack" valign="top" style="font-family:-apple-system,'Segoe UI',Helvetica,Arial,sans-serif;">
+        <div class="tx" style="font-size:17px;line-height:22px;font-weight:700;color:#1D1B16;">{{.Term}} <span class="tx-2" style="font-size:10px;font-weight:700;letter-spacing:1px;color:#8B8577;vertical-align:2px;">{{.Country}}</span></div>
+        <div class="tx-2" style="font-size:13px;line-height:18px;color:#6B665C;margin-top:2px;">{{.Detail}}</div>
+      </td>
+      <td class="stack right-sm" valign="top" align="right" width="120" style="font-family:-apple-system,'Segoe UI',Helvetica,Arial,sans-serif;white-space:nowrap;">
+        <div style="font-family:Georgia,'Times New Roman',serif;font-size:30px;line-height:32px;font-weight:700;color:{{.RankColor}};">{{.Rank}}</div>
+        <div style="margin-top:4px;">{{template "chip" .Change}}</div>
+      </td>
+    </tr></table>
+    <div style="margin-top:12px;">{{template "spark" .Spark}}</div>
+    {{if .Comment}}<div class="tx" style="font-family:-apple-system,'Segoe UI',Helvetica,Arial,sans-serif;font-size:15px;line-height:23px;color:#1D1B16;margin-top:12px;">{{.Comment}}</div>{{end}}
+  </td></tr>
+</table>{{end}}
+
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" class="bg-page" style="background-color:#F3EEE6;">
+<tr><td align="center" style="padding:28px 12px 40px;">
+
+<table role="presentation" class="container" width="600" cellpadding="0" cellspacing="0" border="0" style="width:600px;max-width:600px;">
+
+  <!-- masthead -->
+  <tr><td class="bg-card px" style="background-color:#FFFFFF;border-radius:20px 20px 0 0;padding:22px 32px 18px;">
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"><tr>
+      {{if .IconURL}}<td width="48" valign="middle" style="padding-right:12px;"><img src="{{.IconURL}}" width="40" height="40" alt="" style="display:block;width:40px;height:40px;border-radius:9px;"></td>{{end}}
+      <td valign="middle" style="font-family:-apple-system,'Segoe UI',Helvetica,Arial,sans-serif;">
+        <div class="tx" style="font-family:Georgia,'Times New Roman',serif;font-size:19px;line-height:22px;font-weight:700;letter-spacing:.2px;color:#1D1B16;">The Weekly Climb</div>
+        <div class="tx-2" style="font-size:12px;line-height:16px;color:#6B665C;margin-top:1px;">{{.AppName}} &middot; {{.Week}}</div>
+      </td>
+    </tr></table>
+  </td></tr>
+
+  <!-- hero -->
+  <tr><td class="px" bgcolor="{{.Mood.From}}" style="background-color:{{.Mood.From}};background-image:linear-gradient(135deg,{{.Mood.From}} 0%,{{.Mood.To}} 100%);padding:34px 32px 0;">
+    <div style="font-family:-apple-system,'Segoe UI',Helvetica,Arial,sans-serif;"><span style="display:inline-block;padding:6px 12px;border-radius:999px;background-color:rgba(255,255,255,.2);color:#FFFFFF;font-size:12px;line-height:14px;letter-spacing:2px;text-transform:uppercase;font-weight:700;">{{.Mood.Emoji}}&nbsp; {{.Mood.Label}}</span></div>
+    <h1 class="h1" style="margin:16px 0 0;font-family:Georgia,'Times New Roman',serif;font-size:36px;line-height:1.14;font-weight:700;letter-spacing:-.4px;color:#FFFFFF;">{{.Headline}}</h1>
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-top:26px;height:80px;"><tr>
+      {{range .Hero}}<td align="center" valign="bottom" width="7%"><div style="width:78%;height:{{.H}}px;background-color:{{.Color}};opacity:{{.Alpha}};border-radius:5px 5px 0 0;font-size:0;line-height:0;">&nbsp;</div></td>{{end}}
+    </tr></table>
+  </td></tr>
+  <tr><td class="px" bgcolor="{{.Mood.To}}" style="background-color:{{.Mood.To}};padding:8px 32px 10px;font-family:-apple-system,'Segoe UI',Helvetica,Arial,sans-serif;font-size:11px;line-height:14px;letter-spacing:1.5px;text-transform:uppercase;font-weight:700;color:rgba(255,255,255,.8);">Visibility &middot; last 14 days</td></tr>
+
+  <!-- intro + scoreboard -->
+  <tr><td class="bg-card px" style="background-color:#FFFFFF;padding:30px 32px 8px;">
+    <p class="tx" style="margin:0;font-family:Georgia,'Times New Roman',serif;font-size:19px;line-height:30px;color:#1D1B16;">{{.Intro}}</p>
+  </td></tr>
+  <tr><td class="bg-card px" style="background-color:#FFFFFF;padding:18px 24px 6px;">
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="border-collapse:separate;border-spacing:8px 0;"><tr>
+      {{range .Tiles}}
+      <td class="stack stack-gap bg-soft bd" width="33%" valign="top" style="background-color:#F8F5EF;border:1px solid #E7E1D6;border-radius:14px;padding:16px 14px;font-family:-apple-system,'Segoe UI',Helvetica,Arial,sans-serif;">
+        <div class="tx-2" style="font-size:11px;line-height:14px;letter-spacing:1.5px;text-transform:uppercase;font-weight:700;color:#8B8577;">{{.Label}}</div>
+        <div class="tx" style="font-family:Georgia,'Times New Roman',serif;font-size:42px;line-height:48px;font-weight:700;color:#1D1B16;margin-top:6px;">{{.Value}}</div>
+        <div style="margin-top:2px;">{{template "chip" .Delta}}</div>
+        <div class="tx-2" style="font-size:12px;line-height:16px;color:#6B665C;margin-top:8px;">{{.Sub}}</div>
+      </td>
+      {{end}}
+    </tr></table>
+  </td></tr>
+  <tr><td class="bg-card px" style="background-color:#FFFFFF;padding:10px 32px 30px;font-family:-apple-system,'Segoe UI',Helvetica,Arial,sans-serif;">
+    {{if .ScoreNote}}<p class="tx-2" style="margin:8px 0 12px;font-size:14px;line-height:21px;font-style:italic;color:#6B665C;">{{.ScoreNote}}</p>{{end}}
+    <div class="tx-2" style="font-size:11px;line-height:18px;color:#8B8577;"><span style="color:#E8A317;">&#9632;</span> summit, top 3 &nbsp; <span style="color:#2F9E6B;">&#9632;</span> ridge, top 10 &nbsp; <span style="color:#3B82C4;">&#9632;</span> foothills, top 30 &nbsp; <span style="color:#B7B1A6;">&#9632;</span> base camp</div>
+  </td></tr>
+
+  <!-- highlights -->
+  {{if .Highlights}}
+  <tr><td class="bg-card px" style="background-color:#FFFFFF;padding:6px 32px 26px;border-top:1px solid #EFE9DE;">
+    <div style="padding-top:24px;">{{template "kicker" "The week in four stories"}}</div>
+    {{range .Highlights}}
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" class="bg-soft" style="background-color:#F8F5EF;border-radius:14px;border-collapse:separate;margin-top:12px;border-left:5px solid {{.Border}};">
+      <tr><td style="padding:18px 20px;font-family:-apple-system,'Segoe UI',Helvetica,Arial,sans-serif;">
+        <div class="tx" style="font-family:Georgia,'Times New Roman',serif;font-size:21px;line-height:27px;font-weight:700;color:#1D1B16;"><span style="font-size:20px;">{{.Emoji}}</span>&nbsp; {{.Title}}</div>
+        <div class="tx" style="font-size:15px;line-height:24px;color:#2B2923;margin-top:6px;">{{.Body}}</div>
+        {{with .Row}}{{template "mini" .}}{{end}}
+      </td></tr>
+    </table>
+    {{end}}
+  </td></tr>
+  {{end}}
+
+  <!-- climbers -->
+  {{if .Climbers.Rows}}
+  <tr><td class="bg-card px" style="background-color:#FFFFFF;padding:6px 32px 22px;border-top:1px solid #EFE9DE;">
+    <div style="padding-top:24px;">{{template "kicker" "Uphill"}}</div>
+    <h2 class="tx" style="margin:0;font-family:Georgia,'Times New Roman',serif;font-size:27px;line-height:32px;font-weight:700;color:#1D1B16;">{{.Climbers.Title}}</h2>
+    {{if .Climbers.Intro}}<p class="tx-2" style="margin:6px 0 16px;font-family:-apple-system,'Segoe UI',Helvetica,Arial,sans-serif;font-size:15px;line-height:23px;color:#6B665C;">{{.Climbers.Intro}}</p>{{else}}<div style="height:14px;"></div>{{end}}
+    {{range .Climbers.Rows}}{{template "row" .}}{{end}}
+  </td></tr>
+  {{end}}
+
+  <!-- fallers -->
+  {{if .Fallers.Rows}}
+  <tr><td class="bg-card px" style="background-color:#FFFFFF;padding:6px 32px 22px;border-top:1px solid #EFE9DE;">
+    <div style="padding-top:24px;">{{template "kicker" "Downhill"}}</div>
+    <h2 class="tx" style="margin:0;font-family:Georgia,'Times New Roman',serif;font-size:27px;line-height:32px;font-weight:700;color:#1D1B16;">{{.Fallers.Title}}</h2>
+    {{if .Fallers.Intro}}<p class="tx-2" style="margin:6px 0 16px;font-family:-apple-system,'Segoe UI',Helvetica,Arial,sans-serif;font-size:15px;line-height:23px;color:#6B665C;">{{.Fallers.Intro}}</p>{{else}}<div style="height:14px;"></div>{{end}}
+    {{range .Fallers.Rows}}{{template "row" .}}{{end}}
+  </td></tr>
+  {{end}}
+
+  <!-- competitors -->
+  {{if or .RivalTitle .Callouts}}
+  <tr><td class="bg-card px" style="background-color:#FFFFFF;padding:6px 32px 26px;border-top:1px solid #EFE9DE;">
+    <div style="padding-top:24px;">{{template "kicker" "Over the next ridge"}}</div>
+    <h2 class="tx" style="margin:0;font-family:Georgia,'Times New Roman',serif;font-size:27px;line-height:32px;font-weight:700;color:#1D1B16;">{{if .RivalTitle}}{{.RivalTitle}}{{else}}Competitor corner{{end}}</h2>
+    {{if .RivalBody}}<p class="tx" style="margin:8px 0 6px;font-family:-apple-system,'Segoe UI',Helvetica,Arial,sans-serif;font-size:15px;line-height:24px;color:#2B2923;">{{.RivalBody}}</p>{{end}}
+    {{range .Callouts}}
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-top:12px;">
+      <tr><td style="border-left:3px solid #3B82C4;padding:2px 0 2px 14px;font-family:-apple-system,'Segoe UI',Helvetica,Arial,sans-serif;">
+        <div class="tx" style="font-size:12px;line-height:16px;letter-spacing:1.5px;text-transform:uppercase;font-weight:800;color:#1F5F94;">{{.App}}</div>
+        <div class="tx" style="font-size:15px;line-height:23px;color:#1D1B16;margin-top:2px;">{{.Note}}</div>
+        {{with .Row}}{{template "mini" .}}{{end}}
+      </td></tr>
+    </table>
+    {{end}}
+  </td></tr>
+  {{end}}
+
+  <!-- quests -->
+  <tr><td class="px" style="background-color:#1F2A24;padding:30px 32px 10px;">
+    <div style="font-family:-apple-system,'Segoe UI',Helvetica,Arial,sans-serif;font-size:12px;line-height:16px;letter-spacing:2px;text-transform:uppercase;font-weight:700;color:#C9B27A;">Your move</div>
+    <h2 style="margin:4px 0 0;font-family:Georgia,'Times New Roman',serif;font-size:29px;line-height:34px;font-weight:700;color:#FFFFFF;">This week's quests</h2>
+    <p style="margin:6px 0 0;font-family:-apple-system,'Segoe UI',Helvetica,Arial,sans-serif;font-size:14px;line-height:21px;color:#B7C2BA;">Ordered by payoff for effort. Do the first one and you've already had a good Monday.</p>
+  </td></tr>
+  {{range .Quests}}
+  <tr><td class="px" style="background-color:#1F2A24;padding:14px 32px 6px;">
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:#2A3730;border-radius:14px;border-collapse:separate;">
+      <tr>
+        <td width="64" valign="top" style="padding:20px 0 20px 20px;"><div style="width:38px;height:38px;border-radius:19px;background-color:#E8A317;color:#1F2A24;font-family:Georgia,'Times New Roman',serif;font-size:21px;line-height:38px;font-weight:700;text-align:center;">{{.N}}</div></td>
+        <td valign="top" style="padding:20px 20px 20px 0;font-family:-apple-system,'Segoe UI',Helvetica,Arial,sans-serif;">
+          <div style="font-family:Georgia,'Times New Roman',serif;font-size:21px;line-height:27px;font-weight:700;color:#FFFFFF;">{{.Title}}</div>
+          <div style="margin-top:8px;">
+            <span style="display:inline-block;padding:3px 9px;border-radius:999px;font-size:12px;line-height:16px;font-weight:700;background-color:{{.ImpactBg}};color:{{.ImpactFg}};">{{.Impact}}</span>
+            <span style="display:inline-block;padding:3px 9px;border-radius:999px;font-size:12px;line-height:16px;font-weight:700;background-color:{{.EffortBg}};color:{{.EffortFg}};">{{.Effort}}</span>
+          </div>
+          <div style="font-size:15px;line-height:23px;color:#DCE3DE;margin-top:12px;"><strong style="color:#E8C877;">Why:</strong> {{.Why}}</div>
+          <div style="font-size:15px;line-height:23px;color:#DCE3DE;margin-top:8px;"><strong style="color:#E8C877;">How:</strong> {{.How}}</div>
+          {{range .Rows}}<div style="background-color:#F8F5EF;border-radius:10px;padding:2px 14px 12px;margin-top:12px;"><span style="display:block;"></span>{{template "mini" .}}</div>{{end}}
+        </td>
+      </tr>
+    </table>
+  </td></tr>
+  {{end}}
+  <tr><td style="background-color:#1F2A24;height:24px;line-height:24px;font-size:0;">&nbsp;</td></tr>
+
+  <!-- sign-off -->
+  <tr><td class="bg-card px" align="center" style="background-color:#FFFFFF;padding:34px 40px 12px;border-radius:0;">
+    <div style="font-size:26px;line-height:30px;letter-spacing:6px;">⛰️ 🏔️ ⛰️</div>
+    <p class="tx" style="margin:14px 0 0;font-family:Georgia,'Times New Roman',serif;font-size:19px;line-height:28px;font-style:italic;color:#1D1B16;">{{.SignOff}}</p>
+  </td></tr>
+  <tr><td class="bg-card px" align="center" style="background-color:#FFFFFF;border-radius:0 0 20px 20px;padding:18px 40px 30px;font-family:-apple-system,'Segoe UI',Helvetica,Arial,sans-serif;">
+    <div class="tx-2" style="font-size:12px;line-height:18px;color:#8B8577;">{{.Footer}}</div>
+  </td></tr>
+
+</table>
+</td></tr>
+</table>
+</body>
+</html>
