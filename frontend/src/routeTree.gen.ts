@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as GapsRouteImport } from './routes/gaps'
 import { Route as KeywordsKeywordIdRouteImport } from './routes/keywords.$keywordId'
+import { Route as ReportsIndexRouteImport } from './routes/reports.index'
 import { Route as ReportsSlugRouteImport } from './routes/reports.$slug'
 
 const IndexRoute = IndexRouteImport.update({
@@ -29,6 +30,11 @@ const KeywordsKeywordIdRoute = KeywordsKeywordIdRouteImport.update({
   path: '/keywords/$keywordId',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ReportsIndexRoute = ReportsIndexRouteImport.update({
+  id: '/reports/',
+  path: '/reports/',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ReportsSlugRoute = ReportsSlugRouteImport.update({
   id: '/reports/$slug',
   path: '/reports/$slug',
@@ -40,12 +46,14 @@ export interface FileRoutesByFullPath {
   '/gaps': typeof GapsRoute
   '/keywords/$keywordId': typeof KeywordsKeywordIdRoute
   '/reports/$slug': typeof ReportsSlugRoute
+  '/reports/': typeof ReportsIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/gaps': typeof GapsRoute
   '/keywords/$keywordId': typeof KeywordsKeywordIdRoute
   '/reports/$slug': typeof ReportsSlugRoute
+  '/reports': typeof ReportsIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -53,13 +61,21 @@ export interface FileRoutesById {
   '/gaps': typeof GapsRoute
   '/keywords/$keywordId': typeof KeywordsKeywordIdRoute
   '/reports/$slug': typeof ReportsSlugRoute
+  '/reports/': typeof ReportsIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/gaps' | '/keywords/$keywordId' | '/reports/$slug'
+  fullPaths:
+    '/' | '/gaps' | '/keywords/$keywordId' | '/reports/$slug' | '/reports/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/gaps' | '/keywords/$keywordId' | '/reports/$slug'
-  id: '__root__' | '/' | '/gaps' | '/keywords/$keywordId' | '/reports/$slug'
+  to: '/' | '/gaps' | '/keywords/$keywordId' | '/reports/$slug' | '/reports'
+  id:
+    | '__root__'
+    | '/'
+    | '/gaps'
+    | '/keywords/$keywordId'
+    | '/reports/$slug'
+    | '/reports/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -67,6 +83,7 @@ export interface RootRouteChildren {
   GapsRoute: typeof GapsRoute
   KeywordsKeywordIdRoute: typeof KeywordsKeywordIdRoute
   ReportsSlugRoute: typeof ReportsSlugRoute
+  ReportsIndexRoute: typeof ReportsIndexRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -92,6 +109,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof KeywordsKeywordIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/reports/': {
+      id: '/reports/'
+      path: '/reports'
+      fullPath: '/reports/'
+      preLoaderRoute: typeof ReportsIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/reports/$slug': {
       id: '/reports/$slug'
       path: '/reports/$slug'
@@ -107,6 +131,7 @@ const rootRouteChildren: RootRouteChildren = {
   GapsRoute: GapsRoute,
   KeywordsKeywordIdRoute: KeywordsKeywordIdRoute,
   ReportsSlugRoute: ReportsSlugRoute,
+  ReportsIndexRoute: ReportsIndexRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
