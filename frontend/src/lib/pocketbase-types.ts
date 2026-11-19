@@ -15,6 +15,7 @@ export const Collections = {
 	LatestRanks: "latest_ranks",
 	PublicReports: "public_reports",
 	RankHistory: "rank_history",
+	Reports: "reports",
 	TrackedApps: "tracked_apps",
 	Users: "users",
 } as const
@@ -141,6 +142,27 @@ export type RankHistoryRecord = {
 	updated: IsoAutoDateString
 }
 
+// Superuser-only (see backend/migrations/1794600000_created_reports.go). Hand
+// extended; `html`, `content` and `view` are omitted because the list page never
+// reads them.
+export type ReportsRecord = {
+	created: IsoAutoDateString
+	headline?: string
+	id: string
+	model?: string
+	recipients?: string
+	sent_at?: IsoDateString
+	slug: string
+	subject: string
+	usage?: null | {
+		turns?: number
+		input_tokens?: number
+		output_tokens?: number
+		cache_read_tokens?: number
+		cache_write_tokens?: number
+	}
+}
+
 export type TrackedAppsRecord = {
 	bundle_id?: string
 	created: IsoAutoDateString
@@ -175,6 +197,7 @@ export type KeywordsResponse<Texpand = unknown> = Required<KeywordsRecord> & Bas
 export type LatestRanksResponse<Tapp = unknown, Tchecked_at = unknown, Tkeyword = unknown, Trank = unknown, Trank_7d = unknown, Trank_first = unknown, Texpand = unknown> = Required<LatestRanksRecord<Tapp, Tchecked_at, Tkeyword, Trank, Trank_7d, Trank_first>> & BaseSystemFields<Texpand>
 export type PublicReportsResponse<Tview = unknown, Texpand = unknown> = Required<PublicReportsRecord<Tview>> & BaseSystemFields<Texpand>
 export type RankHistoryResponse<Texpand = unknown> = Required<RankHistoryRecord> & BaseSystemFields<Texpand>
+export type ReportsResponse<Texpand = unknown> = Required<ReportsRecord> & BaseSystemFields<Texpand>
 export type TrackedAppsResponse<Texpand = unknown> = Required<TrackedAppsRecord> & BaseSystemFields<Texpand>
 export type UsersResponse<Texpand = unknown> = Required<UsersRecord> & AuthSystemFields<Texpand>
 
@@ -190,6 +213,7 @@ export type CollectionRecords = {
 	latest_ranks: LatestRanksRecord
 	public_reports: PublicReportsRecord
 	rank_history: RankHistoryRecord
+	reports: ReportsRecord
 	tracked_apps: TrackedAppsRecord
 	users: UsersRecord
 }
@@ -204,6 +228,7 @@ export type CollectionResponses = {
 	latest_ranks: LatestRanksResponse
 	public_reports: PublicReportsResponse
 	rank_history: RankHistoryResponse
+	reports: ReportsResponse
 	tracked_apps: TrackedAppsResponse
 	users: UsersResponse
 }

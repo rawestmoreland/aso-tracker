@@ -30,14 +30,14 @@ export default function Header() {
 					aria-label="Standings home"
 				>
 					<Mark />
-					<span className="font-display text-xl font-bold tracking-tight">
+					<span className="font-display hidden text-xl font-bold tracking-tight sm:inline">
 						Standings
 					</span>
 				</Link>
 				<div className="flex items-center gap-5">
 					<nav
 						aria-label="Main"
-						className="flex items-center gap-4 text-sm font-medium"
+						className="flex items-center gap-3 whitespace-nowrap text-sm font-medium sm:gap-4"
 					>
 						<Link
 							to="/"
@@ -50,6 +50,12 @@ export default function Header() {
 							className="text-muted-foreground no-underline transition-colors hover:text-foreground [&.active]:text-foreground"
 						>
 							Gaps
+						</Link>
+						<Link
+							to="/reports"
+							className="text-muted-foreground no-underline transition-colors hover:text-foreground [&.active]:text-foreground"
+						>
+							Reports
 						</Link>
 					</nav>
 					<ThemeToggle />
