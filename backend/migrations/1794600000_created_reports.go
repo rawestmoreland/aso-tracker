@@ -6,8 +6,8 @@ import (
 )
 
 // reports stores every generated weekly report: the rendered email, the
-// structured content Claude wrote, and token usage. API rules are left null,
-// so only superusers can read it.
+// structured content Claude wrote, and token usage. API rules start out null
+// (superusers only); a later migration opens list/view to one `users` account.
 func init() {
 	m.Register(func(app core.App) error {
 		c := core.NewBaseCollection("reports")

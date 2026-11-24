@@ -142,7 +142,8 @@ export type RankHistoryRecord = {
 	updated: IsoAutoDateString
 }
 
-// Superuser-only (see backend/migrations/1794600000_created_reports.go). Hand
+// Readable only by one allow-listed `users` account (see the reports
+// migrations in backend/migrations/). Hand
 // extended; `html`, `content` and `view` are omitted because the list page never
 // reads them.
 export type ReportsRecord = {
