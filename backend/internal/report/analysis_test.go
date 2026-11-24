@@ -122,3 +122,59 @@ func TestSnapshotRequiresMine(t *testing.T) {
 		t.Fatal("expected error when no app is_mine")
 	}
 }
+
+func TestCountryOverviews(t *testing.T) {
+	// Single country: the split would only repeat Overview.
+	d := fixture()
+	me, _ := d.Mine()
+	if got := d.CountryOverviews(me, t0, 7); got != nil {
+		t.Errorf("single country should give nil, got %+v", got)
+	}
+
+	// us: #1 -> altitude 100. gb: unranked -> altitude 0. A blended score hides both.
+	d = NewDataset(
+		[]App{{ID: "me", Name: "Mine", IsMine: true}},
+		[]Keyword{
+			{ID: "u1", Term: "learn german", Country: "us"},
+			{ID: "g1", Term: "learn german", Country: "gb"},
+			{ID: "g2", Term: "gcse german", Country: "gb"},
+		},
+	)
+	add(d, "u1", "me", map[int]int{8: 1, 7: 1, 0: 1})
+	add(d, "g1", "me", map[int]int{8: 0, 7: 0, 0: 0})
+	add(d, "g2", "me", map[int]int{8: 0, 7: 0, 0: 11})
+	d.Sort()
+	me, _ = d.Mine()
+
+	blended := d.Overview(me, t0, 7)
+	if blended.Country != "" || blended.Keywords != 3 {
+		t.Errorf("blended = %+v", blended)
+	}
+
+	got := d.CountryOverviews(me, t0, 7)
+	if len(got) != 2 || got[0].Country != "gb" || got[1].Country != "us" {
+		t.Fatalf("countries = %+v", got)
+	}
+	gb, us := got[0], got[1]
+	if gb.Keywords != 2 || gb.Visibility != 45.0 { // (0 + 90) / 2
+		t.Errorf("gb = %+v", gb)
+	}
+	if us.Keywords != 1 || us.Visibility != 100.0 {
+		t.Errorf("us = %+v", us)
+	}
+	// gb gained 90 altitude on g2 over 2 paired keywords; us unchanged.
+	if gb.VisibilityChange == nil || *gb.VisibilityChange != 45.0 {
+		t.Errorf("gb change = %v", gb.VisibilityChange)
+	}
+	if us.VisibilityChange == nil || *us.VisibilityChange != 0 {
+		t.Errorf("us change = %v", us.VisibilityChange)
+	}
+	if gb.Now.Top10 != 0 || gb.Now.Ranked != 1 || us.Now.Top3 != 1 {
+		t.Errorf("counts gb=%+v us=%+v", gb.Now, us.Now)
+	}
+
+	snap, err := d.Snapshot(t0, 7)
+	if err != nil || len(snap.MyCountries) != 2 {
+		t.Errorf("snapshot countries = %+v (%v)", snap.MyCountries, err)
+	}
+}

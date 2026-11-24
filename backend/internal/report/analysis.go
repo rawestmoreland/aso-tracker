@@ -125,8 +125,11 @@ type Counts struct {
 
 // Overview is the scoreboard for one app.
 type Overview struct {
-	App      string `json:"app"`
-	IsMine   bool   `json:"is_mine"`
+	App    string `json:"app"`
+	IsMine bool   `json:"is_mine"`
+	// Country is the storefront this overview is limited to (e.g. "gb"), or
+	// empty when it covers every country.
+	Country  string `json:"country,omitempty"`
 	Keywords int    `json:"keywords"`
 	// Visibility is the mean altitude over all keywords, 0-100.
 	Visibility float64 `json:"visibility"`
@@ -158,9 +161,40 @@ func tally(c *Counts, rank int) {
 	}
 }
 
-// Overview summarises an app across all its keywords.
+// Overview summarises an app across all its keywords, in every country.
 func (d *Dataset) Overview(a App, asOf time.Time, days int) Overview {
-	facts := d.Facts(a, asOf, days)
+	return overviewOf(a, d.Facts(a, asOf, days))
+}
+
+// CountryOverviews splits an app's overview by storefront, sorted by country
+// code, so a weak new market can't hide inside (or drag down) a strong one.
+// It returns nil when the app is tracked in fewer than two countries, where
+// the split would only repeat Overview.
+func (d *Dataset) CountryOverviews(a App, asOf time.Time, days int) []Overview {
+	byCountry := map[string][]KeywordFact{}
+	for _, f := range d.Facts(a, asOf, days) {
+		byCountry[f.Country] = append(byCountry[f.Country], f)
+	}
+	if len(byCountry) < 2 {
+		return nil
+	}
+	countries := make([]string, 0, len(byCountry))
+	for c := range byCountry {
+		countries = append(countries, c)
+	}
+	sort.Strings(countries)
+
+	out := make([]Overview, 0, len(countries))
+	for _, c := range countries {
+		o := overviewOf(a, byCountry[c])
+		o.Country = c
+		out = append(out, o)
+	}
+	return out
+}
+
+// overviewOf summarises already-computed facts for one app.
+func overviewOf(a App, facts []KeywordFact) Overview {
 	o := Overview{App: a.Name, IsMine: a.IsMine, Keywords: len(facts)}
 
 	var sumAlt, rankSum float64
@@ -327,12 +361,14 @@ func (d *Dataset) History(keywordID string, asOf time.Time, days int) []AppHisto
 // Snapshot is everything the renderer needs: your scoreboard, rivals, and a
 // fact per keyword so Content can reference keywords by ID.
 type Snapshot struct {
-	AsOf   time.Time
-	Days   int
-	Mine   App
-	Me     Overview
-	Rivals []Overview
-	Facts  map[string]KeywordFact
+	AsOf time.Time
+	Days int
+	Mine App
+	Me   Overview
+	// MyCountries is Me split by storefront; nil with fewer than two countries.
+	MyCountries []Overview
+	Rivals      []Overview
+	Facts       map[string]KeywordFact
 }
 
 // Snapshot builds the Snapshot for the window ending at asOf.
@@ -341,7 +377,8 @@ func (d *Dataset) Snapshot(asOf time.Time, days int) (*Snapshot, error) {
 	if err != nil {
 		return nil, err
 	}
-	s := &Snapshot{AsOf: asOf, Days: days, Mine: mine, Me: d.Overview(mine, asOf, days), Facts: map[string]KeywordFact{}}
+	s := &Snapshot{AsOf: asOf, Days: days, Mine: mine, Me: d.Overview(mine, asOf, days),
+		MyCountries: d.CountryOverviews(mine, asOf, days), Facts: map[string]KeywordFact{}}
 	for _, f := range d.Facts(mine, asOf, days) {
 		s.Facts[f.KeywordID] = f
 	}
