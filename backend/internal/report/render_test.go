@@ -188,3 +188,76 @@ func TestViewJSONContract(t *testing.T) {
 		}
 	}
 }
+
+func TestCountryTable(t *testing.T) {
+	e, snap, c := sampleEmail(t)
+	if len(snap.MyCountries) != 2 {
+		t.Fatalf("sample should span two countries, got %+v", snap.MyCountries)
+	}
+
+	for _, want := range []string{"By country", ">GB<", ">US<", "keywords", "in top 10"} {
+		if !strings.Contains(e.HTML, want) {
+			t.Errorf("HTML missing %q", want)
+		}
+	}
+	for _, want := range []string{"BY COUNTRY", "GB: visibility", "US: visibility"} {
+		if !strings.Contains(e.Text, want) {
+			t.Errorf("text missing %q:\n%s", want, e.Text)
+		}
+	}
+
+	raw, err := ViewJSON(c, snap, Meta{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	var v struct {
+		Countries []struct {
+			Country    string    `json:"country"`
+			Keywords   int       `json:"keywords"`
+			Visibility float64   `json:"visibility"`
+			Daily      []float64 `json:"daily_visibility"`
+			Change     struct {
+				Kind string `json:"kind"`
+			} `json:"change"`
+		} `json:"countries"`
+	}
+	if err := json.Unmarshal(raw, &v); err != nil {
+		t.Fatal(err)
+	}
+	if len(v.Countries) != 2 || v.Countries[0].Country != "GB" || v.Countries[1].Country != "US" {
+		t.Fatalf("countries = %+v", v.Countries)
+	}
+	if v.Countries[0].Keywords != 6 || v.Countries[1].Keywords != 12 || len(v.Countries[0].Daily) != SparkDays {
+		t.Errorf("countries = %+v", v.Countries)
+	}
+	if v.Countries[0].Change.Kind == "" {
+		t.Error("country change chip is empty")
+	}
+}
+
+func TestCountryTableOmittedForOneCountry(t *testing.T) {
+	d := SampleDataset(SampleNow)
+	for id, kw := range d.Keywords {
+		kw.Country = "us"
+		d.Keywords[id] = kw
+	}
+	snap, err := d.Snapshot(SampleNow, 7)
+	if err != nil {
+		t.Fatal(err)
+	}
+	c := SampleContent()
+	if err := c.Normalize(func(id string) bool { _, ok := snap.Facts[id]; return ok }); err != nil {
+		t.Fatal(err)
+	}
+	e, err := Render(c, snap, Meta{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if strings.Contains(e.HTML, "By country") || strings.Contains(e.Text, "BY COUNTRY") {
+		t.Error("a single-country report should not show the country table")
+	}
+	raw, _ := ViewJSON(c, snap, Meta{})
+	if !strings.Contains(string(raw), `"countries":[]`) {
+		t.Errorf("expected empty countries array in %s", raw)
+	}
+}

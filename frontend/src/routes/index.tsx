@@ -13,7 +13,7 @@ import {
 } from "@tanstack/react-table";
 import { cn } from "cn";
 import { ArrowDown, ArrowUp, ArrowUpDown, Minus } from "lucide-react";
-import { useEffect } from "react";
+import { useEffect, useMemo } from "react";
 import { Line, LineChart, YAxis } from "recharts";
 import { Button } from "#/components/ui/button";
 import { Input } from "#/components/ui/input";
@@ -60,8 +60,12 @@ const SORT_IDS = ["term", "rank", "change"] as const;
 type SortId = (typeof SORT_IDS)[number];
 const TREND_DAYS = 30;
 
+const ALL_COUNTRIES = "all";
+
 type IndexSearch = {
 	q?: string;
+	/** Lower-case storefront code, e.g. "gb". Omitted for all countries. */
+	country?: string;
 	rank?: Exclude<RankFilter, "all">;
 	sort?: SortId;
 	desc?: boolean;
@@ -82,6 +86,10 @@ export const Route = createFileRoute("/")({
 		const size = Number(s.size);
 		return {
 			q: typeof s.q === "string" && s.q ? s.q : undefined,
+			country:
+				typeof s.country === "string" && /^[a-z]{2}$/i.test(s.country)
+					? s.country.toLowerCase()
+					: undefined,
 			rank,
 			sort: sort && !(sort === "rank" && s.desc !== true) ? sort : undefined,
 			desc: s.desc === true || s.desc === "true" ? true : undefined,
@@ -206,6 +214,14 @@ function Sparkline({ points }: { points: Array<number | null> | undefined }) {
 	);
 }
 
+function CountryTag({ country }: { country: string }) {
+	return (
+		<span className="ml-2 rounded bg-muted px-1.5 py-0.5 align-middle text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+			{country}
+		</span>
+	);
+}
+
 type Mover = { row: LatestRanksRecord; delta: number | null; label: string };
 
 function MoversList({
@@ -213,11 +229,13 @@ function MoversList({
 	tone,
 	items,
 	empty,
+	showCountry,
 }: {
 	title: string;
 	tone: "gain" | "loss";
 	items: Mover[];
 	empty: string;
+	showCountry: boolean;
 }) {
 	return (
 		<div className="card p-5">
@@ -237,6 +255,7 @@ function MoversList({
 								className="truncate font-semibold hover:text-primary"
 							>
 								{row.term}
+								{showCountry ? <CountryTag country={row.country} /> : null}
 							</Link>
 							<span className="tnum flex shrink-0 items-center gap-2 text-sm">
 								<span className="text-muted-foreground">{label}</span>
@@ -275,9 +294,32 @@ function MoversList({
 }
 
 function App() {
-	const { ranks: data, trends } = Route.useLoaderData();
+	const { ranks: allRanks, trends } = Route.useLoaderData();
 	const search = Route.useSearch();
 	const navigate = Route.useNavigate();
+
+	// Storefronts present in the data, with keyword counts. The filter only
+	// appears when there is more than one to choose from.
+	const countries = useMemo(() => {
+		const counts = new Map<string, number>();
+		for (const r of allRanks)
+			counts.set(r.country, (counts.get(r.country) ?? 0) + 1);
+		return [...counts].sort(([a], [b]) => a.localeCompare(b));
+	}, [allRanks]);
+	// A stale or mistyped ?country= falls back to all countries.
+	const activeCountry =
+		countries.length > 1 && countries.some(([c]) => c === search.country)
+			? search.country
+			: undefined;
+	// Everything below (table, distribution strip, movers, counts) follows the filter.
+	const data = useMemo(
+		() =>
+			activeCountry
+				? allRanks.filter((r) => r.country === activeCountry)
+				: allRanks,
+		[allRanks, activeCountry],
+	);
+	const showCountry = countries.length > 1 && !activeCountry;
 
 	const change = (row: LatestRanksRecord) => {
 		const prev = row.rank_7d ?? row.rank_first;
@@ -311,6 +353,7 @@ function App() {
 					className="row-link text-base font-semibold hover:text-primary"
 				>
 					{row.original.term}
+					{showCountry ? <CountryTag country={row.original.country} /> : null}
 				</Link>
 			),
 		},
@@ -363,7 +406,7 @@ function App() {
 		key: "table",
 		features,
 		columns,
-		data: data ?? [],
+		data,
 		initialState: {
 			sorting: [{ id: search.sort ?? "rank", desc: search.desc ?? false }],
 			columnFilters: [
@@ -392,6 +435,7 @@ function App() {
 		const isDefaultSort = !sort || (sort.id === "rank" && !sort.desc);
 		const next: IndexSearch = {
 			q: q || undefined,
+			country: activeCountry,
 			rank: rank || undefined,
 			sort: isDefaultSort ? undefined : (sort.id as SortId),
 			desc: isDefaultSort || !sort.desc ? undefined : true,
@@ -402,7 +446,7 @@ function App() {
 			(k) => next[k] === search[k],
 		);
 		if (!same) navigate({ search: next, replace: true });
-	}, [sorting, columnFilters, pagination, search, navigate]);
+	}, [sorting, columnFilters, pagination, activeCountry, search, navigate]);
 
 	const termColumn = table.getColumn("term")!;
 	const rankColumn = table.getColumn("rank")!;
@@ -411,8 +455,6 @@ function App() {
 	const filteredCount = table.getFilteredRowModel().rows.length;
 	const from = filteredCount === 0 ? 0 : pageIndex * pageSize + 1;
 	const to = Math.min((pageIndex + 1) * pageSize, filteredCount);
-
-	if (!data) return null;
 
 	const counts = Object.fromEntries(
 		BUCKETS.map(({ key }) => [
@@ -455,6 +497,17 @@ function App() {
 		.at(-1);
 	const setFilter = (v: RankFilter) =>
 		rankColumn.setFilterValue(v === "all" ? undefined : v);
+	const setCountry = (v: string) => {
+		table.setPageIndex(0);
+		navigate({
+			search: (prev) => ({
+				...prev,
+				country: v === ALL_COUNTRIES ? undefined : v,
+				page: undefined,
+			}),
+			replace: true,
+		});
+	};
 
 	return (
 		<main className="page-wrap pb-16 pt-10">
@@ -464,6 +517,11 @@ function App() {
 				</h1>
 				<p className="mt-2 max-w-prose text-muted-foreground">
 					Where your app lands in the App Store for {total} tracked keywords
+					{activeCountry
+						? ` in ${activeCountry.toUpperCase()}`
+						: countries.length > 1
+							? ` across ${countries.length} countries`
+							: ""}
 					{lastChecked
 						? `, last checked ${new Date(lastChecked.replace(" ", "T")).toLocaleDateString(undefined, { month: "short", day: "numeric" })}`
 						: ""}
@@ -532,12 +590,14 @@ function App() {
 					tone="gain"
 					items={gainers}
 					empty="No keywords moved up this week."
+					showCountry={showCountry}
 				/>
 				<MoversList
 					title="Biggest drops"
 					tone="loss"
 					items={losers}
 					empty="No keywords moved down this week."
+					showCountry={showCountry}
 				/>
 			</section>
 
@@ -550,6 +610,29 @@ function App() {
 					onChange={(e) => termColumn.setFilterValue(e.target.value)}
 					className="w-full bg-card sm:w-64"
 				/>
+				{countries.length > 1 ? (
+					<Select
+						value={activeCountry ?? ALL_COUNTRIES}
+						onValueChange={setCountry}
+					>
+						<SelectTrigger
+							className="w-44 bg-card"
+							aria-label="Filter by country"
+						>
+							<SelectValue />
+						</SelectTrigger>
+						<SelectContent>
+							<SelectItem value={ALL_COUNTRIES}>
+								All countries ({allRanks.length})
+							</SelectItem>
+							{countries.map(([code, n]) => (
+								<SelectItem key={code} value={code}>
+									{code.toUpperCase()} ({n})
+								</SelectItem>
+							))}
+						</SelectContent>
+					</Select>
+				) : null}
 				<Select
 					value={activeFilter}
 					onValueChange={(v) => setFilter(v as RankFilter)}
@@ -640,8 +723,8 @@ function App() {
 									colSpan={columns.length}
 									className="py-12 text-center text-muted-foreground"
 								>
-									No keywords match. Try a different search or clear the rank
-									filter.
+									No keywords match. Try a different search or clear the
+									filters.
 								</TableCell>
 							</TableRow>
 						)}

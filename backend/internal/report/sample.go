@@ -49,7 +49,11 @@ func SampleDataset(now time.Time) *Dataset {
 	}
 	var kws []Keyword
 	for i, r := range sampleRows {
-		kws = append(kws, Keyword{ID: fmt.Sprintf("kw%02d", i+1), Term: r.term, Country: "us"})
+		country := "us"
+		if i >= 12 { // the last six are a newer second storefront, so the by-country table has something to show
+			country = "gb"
+		}
+		kws = append(kws, Keyword{ID: fmt.Sprintf("kw%02d", i+1), Term: r.term, Country: country})
 	}
 	d := NewDataset(apps, kws)
 
