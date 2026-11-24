@@ -38,6 +38,7 @@ Frontend (run from `frontend/`):
 - Collections: `keywords` (term, country, tracked), `tracked_apps` (track_id), `rank_history` (keyword, app, rank, append-only), and `latest_ranks` — a **view collection** over `rank_history` (latest rank, 7-day rank, first rank per keyword/app) defined in a migration, which is what the frontend mostly reads.
 - **Weekly report** (`internal/report`) — a cron job (`ASO_REPORT_CRON`, default `0 14 * * 1`, `off` disables; only scheduled when `ANTHROPIC_API_KEY` is set) emails "The Weekly Climb". The design rule: **Claude writes words, Go computes every number.**
   - `data.go`/`analysis.go`: `Load` pulls 35 days of `rank_history` into an in-memory `Dataset`; pure functions compute facts (rank now vs 7d ago, visibility score, movers, opportunities, competitor gaps). Rank 0 = unranked, treated as position 201 in deltas, same as the frontend Gaps page.
+  - **Countries**: keywords are per storefront (`term`+`country`), so the headline visibility score blends every country. `Dataset.CountryOverviews` splits your app's overview per country (nil with fewer than two); it feeds `Snapshot.MyCountries`, the `my_app_by_country` field of the `get_overview` MCP tool, and the "By country" table in the email and web report (`view.countries`, an optional field, so no `viewVersion` bump; reports stored before it exist have none). Movers, opportunities and rival overviews are still blended.
   - `mcp.go`: those facts exposed as read-only MCP tools (official Go MCP SDK). The same server runs in-process for the report agent (in-memory transport) and over HTTP at `/api/aso/mcp` (superuser auth) so you can query the data from Claude Desktop/Code.
   - `agent.go`: tool loop on the Messages API (beta namespace, for server-side refusal fallbacks). Model is `ASO_REPORT_MODEL` (default `claude-opus-5-5`). The final answer is constrained by a JSON Schema (`content.go`), then `Normalize` clamps lengths/enums and drops keyword IDs that aren't in the data.
   - `render.go` + `email.html.tmpl`: table-based email-safe HTML (+ plain-text part), dark mode, mobile layout. Figures in the email are looked up by keyword ID from the data, never from model text. Chart bars are `div`s inside table cells (Outlook desktop may flatten them).
@@ -52,5 +53,7 @@ Frontend (run from `frontend/`):
 ## Frontend notes
 
 `/reports/$slug` renders a weekly report natively (components in `src/components/report/`, types in `src/lib/report.ts`) from the `public_reports` collection. `src/lib/pocketbase-types.ts` was extended by hand for it; regenerate with pocketbase-typegen when convenient.
+
+The dashboard (`src/routes/index.tsx`) has a country filter (`?country=gb`, shown only when keywords span 2+ countries) that scopes the table, rank distribution and movers; unknown codes fall back to all countries.
 
 File-based routes live in `src/routes/`; `__root.tsx` is the layout. TanStack Query is provided via `src/integrations/tanstack-query/`. The `#/*` import alias maps to `src/*` (package.json `imports`).

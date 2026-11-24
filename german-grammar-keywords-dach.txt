@@ -1,0 +1,185 @@
+# Keywords for "üben: german grammar" in the German-speaking storefronts.
+# Same file, imported once per storefront:
+#   POST /api/aso/import-keywords?country=de
+#   POST /api/aso/import-keywords?country=at
+#   POST /api/aso/import-keywords?country=ch
+# Lines starting with # are comments.
+#
+# Audience here is different from the English-speaking stores: people living in
+# DE/AT/CH who are learning German as a second language (expats, migrants,
+# students, exam candidates), searching in German, English, or both. Terms aimed
+# at native-speaker school children (Rechtschreibung, Klasse 5, ...) are left
+# out on purpose.
+#
+# CAVEAT: the app can only rank here if its metadata is localized for these
+# storefronts. With English-only metadata, expect rank 0 on most German terms.
+
+# --- Core (German): highest-intent, most competitive ---
+deutsch lernen
+deutsch lernen app
+deutsch lernen kostenlos
+deutsch lernen für anfänger
+deutsch lernen offline
+deutsch für anfänger
+deutsch für ausländer
+deutsch als fremdsprache
+deutsch als zweitsprache
+daf
+daz
+deutsch grammatik
+deutsch grammatik app
+deutsche grammatik
+deutsch grammatik übungen
+deutsch grammatik lernen
+deutsch üben
+deutsch uben
+deutsch übungen
+übungen deutsch
+deutsch kurs
+deutschkurs
+deutsch sprachkurs
+
+# --- Grammar topics (German, long-tail, more winnable) ---
+artikel lernen
+artikel üben
+der die das
+der die das lernen
+der die das üben
+der die das trainer
+nomen artikel
+grammatik kasus
+kasus deutsch
+deutsche fälle
+nominativ akkusativ dativ genitiv
+nominativ akkusativ dativ
+akkusativ dativ
+wechselpräpositionen
+präpositionen deutsch
+adjektivendungen
+adjektivdeklination
+deklination
+konjugation
+konjugation üben
+verben konjugieren
+verben deutsch
+unregelmäßige verben
+unregelmässige verben
+starke verben
+modalverben
+trennbare verben
+reflexive verben
+satzbau
+satzbau deutsch
+nebensätze
+relativsätze
+konjunktiv
+konjunktiv 2
+passiv
+perfekt
+präteritum
+plusquamperfekt
+futur
+zeiten deutsch
+plural
+pluralbildung
+steigerung adjektive
+konjunktionen
+negation deutsch
+pronomen
+
+# --- Levels and exams (German) ---
+deutsch a1
+deutsch a2
+deutsch b1
+deutsch b2
+deutsch c1
+deutsch a1 a2
+deutsch b1 prüfung
+deutsch prüfung
+deutsch test
+deutsch einstufungstest
+deutsch niveau
+goethe zertifikat
+goethe zertifikat b1
+goethe zertifikat b2
+goethe prüfung
+telc deutsch
+telc b1
+testdaf
+dtz
+dtz prüfung
+deutsch test für zuwanderer
+ösd prüfung
+ösd zertifikat
+
+# --- Vocabulary and skills (German) ---
+deutsch wortschatz
+deutsch vokabeln
+deutsch vokabeltrainer
+deutsch lernen vokabeln
+deutsche wörter
+deutsche sätze
+deutsch sätze bilden
+deutsch lesen
+deutsch hören
+deutsch schreiben
+deutsch aussprache
+deutsch wörterbuch
+deutsch übersetzer
+
+# --- English-language queries (expats and learners searching in English) ---
+learn german
+learn german app
+learn german fast
+learn german for free
+learn german offline
+learn german grammar
+how to learn german
+best app to learn german
+german grammar
+german grammar app
+german grammar exercises
+german grammar practice
+german grammar quiz
+german grammar rules
+german grammar for beginners
+german for beginners
+german for english speakers
+german lessons
+german course
+german tutor
+german cases
+german articles
+der die das quiz
+german noun gender
+german declension
+german adjective endings
+german verb conjugation
+german irregular verbs
+german modal verbs
+german separable verbs
+german prepositions
+german word order
+german konjunktiv
+german a1
+german a2
+german b1
+german b2
+german b1 exam
+goethe exam
+goethe b1
+telc german
+german vocabulary
+german vocab trainer
+german flashcards
+german sentences
+german translator
+german dictionary
+
+# --- Competitor discovery (not for your metadata; track to see who ranks) ---
+duolingo deutsch
+babbel deutsch
+busuu deutsch
+mondly deutsch
+lingoda
+anki deutsch

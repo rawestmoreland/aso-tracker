@@ -27,6 +27,21 @@ export type KeywordRow = {
 	comment?: string;
 };
 
+/** One storefront's own visibility score. Present only when keywords span 2+ countries. */
+export type CountryRow = {
+	/** Upper-case storefront code, e.g. "GB". */
+	country: string;
+	keywords: number;
+	/** 0-100, same scale as the headline Visibility tile. */
+	visibility: number;
+	/** Change in visibility over the report window. */
+	change: Chip;
+	top10: number;
+	top3: number;
+	/** Daily visibility, oldest first. */
+	daily_visibility: number[];
+};
+
 export type Tile = { label: string; value: string; sub: string; delta: Chip };
 
 export type Highlight = {
@@ -67,6 +82,8 @@ export type ReportView = {
 	/** Daily visibility score, oldest first. */
 	hero_series: number[];
 	tiles: Tile[];
+	/** Absent on reports stored before per-country scores existed. */
+	countries?: CountryRow[];
 	highlights: Highlight[];
 	climbers: Section;
 	fallers: Section;

@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"html/template"
+	"math"
 	"strings"
 )
 
@@ -137,6 +138,19 @@ type calloutView struct {
 	Row  *rowView `json:"keyword,omitempty"`
 }
 
+// countryView is one storefront's row in the "by country" table. The web page
+// and email show it only when keywords span two or more countries.
+type countryView struct {
+	Country    string    `json:"country"` // upper-case storefront code, e.g. "GB"
+	Keywords   int       `json:"keywords"`
+	Visibility float64   `json:"visibility"` // 0-100, same scale as the headline tile
+	Change     chip      `json:"change"`     // visibility change over the window
+	Top10      int       `json:"top10"`
+	Top3       int       `json:"top3"`
+	Daily      []float64 `json:"daily_visibility"` // oldest first
+	BarPct     int       `json:"-"`                // email bar width, 2-100
+}
+
 type questView struct {
 	N         int    `json:"n"`
 	Title     string `json:"title"`
@@ -173,6 +187,7 @@ type view struct {
 	Hero       []bar           `json:"-"`
 	HeroSeries []float64       `json:"hero_series"` // daily visibility, oldest first
 	Tiles      []tile          `json:"tiles"`
+	Countries  []countryView   `json:"countries"`
 	Highlights []highlightView `json:"highlights"`
 	Climbers   sectionView     `json:"climbers"`
 	Fallers    sectionView     `json:"fallers"`
@@ -305,6 +320,21 @@ func countDelta(now int, prev *Counts, pick func(Counts) int) chip {
 	return deltaChip(now-pick(*prev), true)
 }
 
+// visibilityChip is the change in a visibility score over the window.
+func visibilityChip(change *float64) chip {
+	if change == nil {
+		return deltaChip(0, false)
+	}
+	switch ch := *change; {
+	case ch > 0:
+		return newChip("up", fmt.Sprintf("▲ %.1f", ch))
+	case ch < 0:
+		return newChip("down", fmt.Sprintf("▼ %.1f", -ch))
+	default:
+		return newChip("flat", "no change")
+	}
+}
+
 func buildView(c *Content, s *Snapshot, m Meta) view {
 	mood := moodStyles[c.Mood]
 	if mood.Label == "" {
@@ -323,21 +353,18 @@ func buildView(c *Content, s *Snapshot, m Meta) view {
 			me.Keywords, len(s.Rivals)),
 	}
 
-	vis := deltaChip(0, false)
-	if me.VisibilityChange != nil {
-		switch ch := *me.VisibilityChange; {
-		case ch > 0:
-			vis = newChip("up", fmt.Sprintf("▲ %.1f", ch))
-		case ch < 0:
-			vis = newChip("down", fmt.Sprintf("▼ %.1f", -ch))
-		default:
-			vis = newChip("flat", "no change")
-		}
-	}
 	v.Tiles = []tile{
-		{"Visibility", fmt.Sprintf("%.1f", me.Visibility), "out of 100", vis},
+		{"Visibility", fmt.Sprintf("%.1f", me.Visibility), "out of 100", visibilityChip(me.VisibilityChange)},
 		{"On the ridge", fmt.Sprint(me.Now.Top10), "keywords in the top 10", countDelta(me.Now.Top10, me.Prev, func(c Counts) int { return c.Top10 })},
 		{"At the summit", fmt.Sprint(me.Now.Top3), "keywords in the top 3", countDelta(me.Now.Top3, me.Prev, func(c Counts) int { return c.Top3 })},
+	}
+
+	for _, c := range s.MyCountries {
+		v.Countries = append(v.Countries, countryView{
+			Country: strings.ToUpper(c.Country), Keywords: c.Keywords, Visibility: c.Visibility,
+			Change: visibilityChip(c.VisibilityChange), Top10: c.Now.Top10, Top3: c.Now.Top3,
+			Daily: c.DailyVisibility, BarPct: min(100, max(2, int(math.Round(c.Visibility)))),
+		})
 	}
 
 	row := func(id string) *rowView {
@@ -405,6 +432,9 @@ func buildView(c *Content, s *Snapshot, m Meta) view {
 	}
 
 	// The JSON should say [] rather than null for empty lists.
+	if v.Countries == nil {
+		v.Countries = []countryView{}
+	}
 	if v.Highlights == nil {
 		v.Highlights = []highlightView{}
 	}
@@ -487,6 +517,13 @@ func renderText(v view) string {
 	}
 	if v.ScoreNote != "" {
 		w("%s", v.ScoreNote)
+	}
+	if len(v.Countries) > 0 {
+		w("\nBY COUNTRY")
+		for _, c := range v.Countries {
+			w("  %s: visibility %.1f %s, %d keywords, %d in the top 10, %d in the top 3",
+				c.Country, c.Visibility, c.Change.Text, c.Keywords, c.Top10, c.Top3)
+		}
 	}
 	b.WriteString("\n")
 	for _, h := range v.Highlights {

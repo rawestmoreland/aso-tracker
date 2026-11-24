@@ -114,11 +114,15 @@ type limitIn struct {
 }
 
 type overviewOut struct {
-	AsOf        string     `json:"as_of"`
-	WindowDays  int        `json:"window_days"`
-	MyApp       Overview   `json:"my_app"`
-	Competitors []Overview `json:"competitors"`
-	Notes       string     `json:"notes"`
+	AsOf       string   `json:"as_of"`
+	WindowDays int      `json:"window_days"`
+	MyApp      Overview `json:"my_app"`
+	// MyAppByCountry splits my_app by storefront (omitted with fewer than two
+	// countries). my_app blends every country, so check this before concluding
+	// anything about a single market.
+	MyAppByCountry []Overview `json:"my_app_by_country,omitempty"`
+	Competitors    []Overview `json:"competitors"`
+	Notes          string     `json:"notes"`
 }
 
 type moversOut struct {
@@ -197,7 +201,8 @@ func (t *Tools) Server() *mcp.Server {
 	mcp.AddTool(s, &mcp.Tool{
 		Name: "get_overview",
 		Description: "Scoreboard for your app and every competitor over a window: visibility score (0-100) and its change, " +
-			"how many keywords sit in the top 3 / top 10 / top 50, average rank, and a daily visibility trend. Start here.",
+			"how many keywords sit in the top 3 / top 10 / top 50, average rank, and a daily visibility trend. " +
+			"Your app's overview is also split per storefront (my_app_by_country) when keywords span several countries. Start here.",
 		Annotations: ro,
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in windowIn) (*mcp.CallToolResult, overviewOut, error) {
 		d, now, err := load(ctx)
@@ -208,7 +213,7 @@ func (t *Tools) Server() *mcp.Server {
 		if err != nil {
 			return nil, overviewOut{}, err
 		}
-		return nil, overviewOut{AsOf: now.Format(time.RFC3339), WindowDays: snap.Days, MyApp: snap.Me, Competitors: snap.Rivals, Notes: rankNote}, nil
+		return nil, overviewOut{AsOf: now.Format(time.RFC3339), WindowDays: snap.Days, MyApp: snap.Me, MyAppByCountry: snap.MyCountries, Competitors: snap.Rivals, Notes: rankNote}, nil
 	})
 
 	mcp.AddTool(s, &mcp.Tool{

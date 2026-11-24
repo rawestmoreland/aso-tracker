@@ -1,5 +1,6 @@
 import { cn } from "cn";
 import type {
+	CountryRow,
 	Highlight,
 	MoodKey,
 	Quest,
@@ -165,6 +166,63 @@ function Scoreboard({ view }: { view: ReportView }) {
 	);
 }
 
+/**
+ * Each storefront's own visibility score. The headline tile blends every
+ * country, so a weak new market can't hide in (or drag down) a strong one.
+ */
+function Countries({ rows }: { rows: CountryRow[] }) {
+	if (rows.length < 2) return null;
+	return (
+		<section aria-label="Visibility by country">
+			<Kicker>By country</Kicker>
+			<ul className="card mt-3 divide-y">
+				{rows.map((c) => (
+					<li
+						key={c.country}
+						className="grid grid-cols-[4.5rem_1fr_auto] items-center gap-4 p-4 sm:grid-cols-[6rem_1fr_auto] sm:p-5"
+					>
+						<div>
+							<p className="text-base font-extrabold tracking-wider">
+								{c.country}
+							</p>
+							<p className="text-xs text-muted-foreground">
+								{c.keywords} keywords
+							</p>
+						</div>
+						<div>
+							<p className="font-display text-3xl font-bold leading-none tnum">
+								{c.visibility.toFixed(1)}
+							</p>
+							<div
+								role="img"
+								aria-label={`Visibility ${c.visibility.toFixed(1)} out of 100`}
+								className="mt-2 h-1.5 overflow-hidden rounded-full bg-muted"
+							>
+								<div
+									className="h-full rounded-full bg-primary"
+									style={{
+										width: `${Math.min(100, Math.max(2, c.visibility))}%`,
+									}}
+								/>
+							</div>
+						</div>
+						<div className="text-right">
+							<Chip chip={c.change} />
+							<p className="mt-1 text-xs text-muted-foreground">
+								{c.top10} in top 10
+							</p>
+						</div>
+					</li>
+				))}
+			</ul>
+			<p className="mt-2 text-xs text-muted-foreground">
+				The headline score blends every country. Each row is that storefront's
+				own visibility score, 0–100.
+			</p>
+		</section>
+	);
+}
+
 function Highlights({ items }: { items: Highlight[] }) {
 	if (items.length === 0) return null;
 	return (
@@ -294,6 +352,7 @@ export function ReportPage({ view }: { view: ReportView }) {
 					{view.intro}
 				</p>
 				<Scoreboard view={view} />
+				<Countries rows={view.countries ?? []} />
 				<Highlights items={view.highlights} />
 				<Movers kicker="Uphill" section={view.climbers} />
 				<Movers kicker="Downhill" section={view.fallers} />
